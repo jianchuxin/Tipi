@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "SF Pro Display", "Segoe UI", sans-serif;
+  --color-ink: #11212d;
+  --color-mist: #dbe7f0;
+  --color-cloud: #f7f9fc;
+  --color-sea: #2b6cb0;
+  --color-sea-deep: #1f4f82;
+  --color-line: rgba(17, 33, 45, 0.1);
+  --shadow-panel: 0 24px 80px rgba(16, 24, 40, 0.14);
+}
+
+@layer base {
+  :root {
+    color: var(--color-ink);
+    background:
+      radial-gradient(circle at top left, rgba(43, 108, 176, 0.15), transparent 40%),
+      linear-gradient(180deg, #f8fbff 0%, #eef4f9 100%);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-width: 360px;
+    min-height: 520px;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background: transparent;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+}
+
