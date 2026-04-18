@@ -1,4 +1,4 @@
-import { browser, type HistoryItem } from "wxt/browser";
+import { browser, type Browser } from "wxt/browser";
 import { hashUrl, normalizeText } from "@/lib/utils/string";
 import type { HistoryRecord } from "@/types/tipi";
 
@@ -7,7 +7,9 @@ type FetchRecentHistoryOptions = {
   startTime: number;
 };
 
-function mapHistoryItemToRecord(item: HistoryItem): HistoryRecord | null {
+export function mapHistoryItemToRecord(
+  item: Browser.history.HistoryItem
+): HistoryRecord | null {
   if (!item.url) {
     return null;
   }

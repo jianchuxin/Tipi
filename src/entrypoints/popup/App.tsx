@@ -1,19 +1,61 @@
-import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import type { KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { browser } from "wxt/browser";
-import { ResultList } from "@/components/ResultList";
+import { SearchCommandCenter } from "@/components/SearchCommandCenter";
 import type { SearchResult, TipiStatsResponse } from "@/types/tipi";
 
 const initialStats: TipiStatsResponse = {
   totalRecords: 0,
-  lastSyncedAt: null
+  lastSyncedAt: null,
+  estimatedStorageBytes: 0
 };
 
+function isTipiStatsResponse(value: unknown): value is TipiStatsResponse {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    typeof candidate.totalRecords === "number" &&
+    typeof candidate.estimatedStorageBytes === "number" &&
+    (typeof candidate.lastSyncedAt === "number" ||
+      candidate.lastSyncedAt === null)
+  );
+}
+
+function isSearchResultArray(value: unknown): value is SearchResult[] {
+  return Array.isArray(value);
+}
+
+function getErrorMessage(value: unknown): string | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.error === "string" ? candidate.error : null;
+}
+
 export default function PopupApp() {
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [stats, setStats] = useState<TipiStatsResponse>(initialStats);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
 
   useEffect(() => {
     void browser.runtime
@@ -21,7 +63,27 @@ export default function PopupApp() {
         type: "tipi.get-stats"
       })
       .then((response) => {
-        setStats(response as TipiStatsResponse);
+        const backgroundError = getErrorMessage(response);
+
+        if (backgroundError) {
+          setStats(initialStats);
+          setErrorMessage(backgroundError);
+          return;
+        }
+
+        if (!isTipiStatsResponse(response)) {
+          setStats(initialStats);
+          setErrorMessage("Tipi background returned invalid stats.");
+          return;
+        }
+
+        setStats(response);
+        setErrorMessage(null);
+      })
+      .catch((error) => {
+        console.error("[Tipi] failed to load popup stats", error);
+        setStats(initialStats);
+        setErrorMessage("Tipi background is not responding.");
       });
   }, []);
 
@@ -30,6 +92,8 @@ export default function PopupApp() {
 
     if (!normalized) {
       setResults([]);
+      setIsLoading(false);
+      setErrorMessage(null);
       return;
     }
 
@@ -41,12 +105,36 @@ export default function PopupApp() {
         query: normalized
       })
       .then((response) => {
-        setResults(response as SearchResult[]);
+        const backgroundError = getErrorMessage(response);
+
+        if (backgroundError) {
+          setResults([]);
+          setErrorMessage(backgroundError);
+          return;
+        }
+
+        if (!isSearchResultArray(response)) {
+          setResults([]);
+          setErrorMessage("Search returned an invalid response.");
+          return;
+        }
+
+        setResults(response);
+        setErrorMessage(null);
+      })
+      .catch((error) => {
+        console.error("[Tipi] search failed", error);
+        setResults([]);
+        setErrorMessage("Search is unavailable right now.");
       })
       .finally(() => {
         setIsLoading(false);
       });
   }, [query]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [results]);
 
   async function openUrl(url: string, recordId: number) {
     await browser.runtime.sendMessage({
@@ -57,68 +145,77 @@ export default function PopupApp() {
     window.close();
   }
 
-  const statusLabel = useMemo(() => {
-    if (!stats.lastSyncedAt) {
-      return "No sync yet";
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (results.length === 0) {
+      return;
     }
 
-    return `Synced ${new Date(stats.lastSyncedAt).toLocaleTimeString()}`;
-  }, [stats.lastSyncedAt]);
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelectedIndex((current) => (current + 1) % results.length);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelectedIndex((current) =>
+        current === 0 ? results.length - 1 : current - 1
+      );
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const selected = results[selectedIndex];
+
+      if (selected) {
+        void openUrl(selected.url, selected.id);
+      }
+    }
+  }
+
+  const helperLabel = useMemo(() => {
+    if (errorMessage) {
+      return errorMessage;
+    }
+
+    if (query.trim()) {
+      return "Matching entries from your local history index.";
+    }
+
+    return "Start typing to search your history, bookmarks, and open tabs.";
+  }, [errorMessage, query]);
 
   return (
-    <main className="relative overflow-hidden p-4">
-      <div className="rounded-3xl border border-white/60 bg-white/78 p-4 shadow-[var(--shadow-panel)] backdrop-blur">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-slate-500">
-              Tipi
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--color-ink)]">
-              Jump back to the page you need.
-            </h1>
-          </div>
-          <button
-            className="rounded-full border border-[color:var(--color-line)] bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-            onClick={() => browser.runtime.openOptionsPage()}
-            type="button"
-          >
-            Settings
-          </button>
-        </div>
+    <main className="min-h-screen bg-[color:var(--color-surface)]">
+      <SearchCommandCenter
+        errorMessage={errorMessage}
+        footerLabel={
+          query.trim()
+            ? "Enter opens the highlighted entry."
+            : "Results appear after you start typing."
+        }
+        helperText={helperLabel}
+        indexedCount={stats.totalRecords}
+        isLoading={isLoading}
+        inputRef={inputRef}
+        onOpen={(result) => {
+          void openUrl(result.url, result.id);
+        }}
+        onQueryChange={setQuery}
+        onQueryKeyDown={handleKeyDown}
+        onSelect={(result) => {
+          const index = results.findIndex((item) => item.id === result.id);
 
-        <label className="mt-5 block">
-          <span className="sr-only">Search history</span>
-          <input
-            autoFocus
-            className="w-full rounded-2xl border border-[color:var(--color-line)] bg-[color:var(--color-cloud)] px-4 py-3 text-sm text-slate-900 outline-none ring-0 transition placeholder:text-slate-400 focus:border-sky-300"
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setQuery(event.target.value)
-            }
-            placeholder="Search title, URL, or hostname..."
-            value={query}
-          />
-        </label>
-
-        <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-          <span>{stats.totalRecords} records indexed</span>
-          <span>{statusLabel}</span>
-        </div>
-
-        <section className="mt-4">
-          <ResultList
-            isLoading={isLoading}
-            onOpen={(url) => {
-              const selected = results.find((item) => item.url === url);
-              if (!selected) {
-                return;
-              }
-
-              void openUrl(url, selected.id);
-            }}
-            results={results}
-          />
-        </section>
-      </div>
+          if (index >= 0) {
+            setSelectedIndex(index);
+          }
+        }}
+        query={query}
+        results={results}
+        showResults={query.trim().length > 0}
+        selectedId={results[selectedIndex]?.id ?? null}
+      />
     </main>
   );
 }

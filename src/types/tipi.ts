@@ -19,6 +19,7 @@ export type SearchResult = HistoryRecord & {
 export type TipiStatsResponse = {
   totalRecords: number;
   lastSyncedAt: number | null;
+  estimatedStorageBytes: number;
 };
 
 export type TipiSyncResponse = {
@@ -27,6 +28,9 @@ export type TipiSyncResponse = {
 };
 
 export type TipiMessage =
+  | {
+      type: "tipi.toggle-overlay";
+    }
   | {
       type: "tipi.search";
       query: string;

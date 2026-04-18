@@ -1,23 +1,11 @@
-import { Index } from "flexsearch";
 import {
   getAllHistoryRecords,
   touchHistoryRecordById
 } from "@/lib/storage/history-db";
+import { hashUrl } from "@/lib/utils/string";
 import type { HistoryRecord, SearchResult } from "@/types/tipi";
 
-const searchIndex = new Index({
-  tokenize: "forward"
-});
-
 const recordsById = new Map<number, HistoryRecord>();
-
-function buildSearchText(record: HistoryRecord) {
-  return [
-    record.normalizedTitle,
-    record.normalizedHostname,
-    record.normalizedUrl
-  ].join(" ");
-}
 
 function scoreRecord(record: HistoryRecord, query: string) {
   let score = 0;
@@ -47,7 +35,6 @@ function scoreRecord(record: HistoryRecord, query: string) {
 }
 
 export function clearSearchIndex() {
-  searchIndex.clear();
   recordsById.clear();
 }
 
@@ -58,26 +45,48 @@ export async function rebuildSearchIndex(records?: HistoryRecord[]) {
 
   for (const record of source) {
     recordsById.set(record.id, record);
-    searchIndex.add(record.id, buildSearchText(record));
+  }
+}
+
+export function upsertSearchRecords(records: HistoryRecord[]) {
+  for (const record of records) {
+    recordsById.set(record.id, record);
+  }
+}
+
+export function removeSearchRecordsByUrls(urls: string[]) {
+  for (const url of urls) {
+    recordsById.delete(hashUrl(url));
   }
 }
 
 export async function searchRecords(query: string): Promise<SearchResult[]> {
   const normalized = query.trim().toLowerCase();
 
-  if (!normalized) {
-    return [];
-  }
-
   if (recordsById.size === 0) {
     await rebuildSearchIndex();
   }
 
-  const hits = (searchIndex.search(normalized, 20) as number[]) ?? [];
+  const records = Array.from(recordsById.values());
 
-  return hits
-    .map((id) => recordsById.get(id))
-    .filter((record): record is HistoryRecord => Boolean(record))
+  if (!normalized) {
+    return records
+      .sort((left, right) => right.lastVisitedAt - left.lastVisitedAt)
+      .slice(0, 10)
+      .map((record) => ({
+        ...record,
+        score: 0
+      }));
+  }
+
+  return records
+    .filter((record) => {
+      return (
+        record.normalizedTitle.includes(normalized) ||
+        record.normalizedHostname.includes(normalized) ||
+        record.normalizedUrl.includes(normalized)
+      );
+    })
     .map((record) => ({
       ...record,
       score: scoreRecord(record, normalized)
@@ -95,4 +104,3 @@ export async function touchSearchRecord(recordId: number) {
 
   recordsById.set(updated.id, updated);
 }
-

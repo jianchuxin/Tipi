@@ -1,4 +1,5 @@
 import type { HistoryRecord, TipiStatsResponse } from "@/types/tipi";
+import { hashUrl } from "@/lib/utils/string";
 
 const DB_NAME = "tipi";
 const DB_VERSION = 1;
@@ -125,6 +126,39 @@ export async function clearHistoryRecords() {
   });
 }
 
+export async function deleteHistoryRecordsByUrls(urls: string[]) {
+  if (urls.length === 0) {
+    return;
+  }
+
+  const database = await openDatabase();
+
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction([STORE_NAME, SYNC_STORE_NAME], "readwrite");
+    const recordStore = transaction.objectStore(STORE_NAME);
+    const metaStore = transaction.objectStore(SYNC_STORE_NAME);
+
+    for (const url of urls) {
+      recordStore.delete(hashUrl(url));
+    }
+
+    metaStore.put(Date.now(), LAST_SYNC_KEY);
+
+    transaction.oncomplete = () => {
+      database.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      database.close();
+      reject(transaction.error);
+    };
+    transaction.onabort = () => {
+      database.close();
+      reject(transaction.error);
+    };
+  });
+}
+
 export async function getHistoryStats(): Promise<TipiStatsResponse> {
   const database = await openDatabase();
 
@@ -133,14 +167,15 @@ export async function getHistoryStats(): Promise<TipiStatsResponse> {
     const recordStore = transaction.objectStore(STORE_NAME);
     const metaStore = transaction.objectStore(SYNC_STORE_NAME);
 
-    const [totalRecords, lastSyncedAt] = await Promise.all([
-      requestToPromise(recordStore.count()),
+    const [records, lastSyncedAt] = await Promise.all([
+      requestToPromise<HistoryRecord[]>(recordStore.getAll()),
       requestToPromise<number | null>(metaStore.get(LAST_SYNC_KEY))
     ]);
 
     return {
-      totalRecords,
-      lastSyncedAt: lastSyncedAt ?? null
+      totalRecords: records.length,
+      lastSyncedAt: lastSyncedAt ?? null,
+      estimatedStorageBytes: new Blob([JSON.stringify(records)]).size
     };
   } finally {
     database.close();

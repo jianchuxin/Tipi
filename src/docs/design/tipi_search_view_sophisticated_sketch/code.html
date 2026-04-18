@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tipi Search View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Work+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "background": "#fbf9f4",
+                    "on-tertiary-fixed-variant": "#3a4953",
+                    "on-secondary-container": "#793f2d",
+                    "surface-container-low": "#f5f3ee",
+                    "secondary-fixed-dim": "#ffb59f",
+                    "on-secondary-fixed-variant": "#6f3726",
+                    "tertiary-container": "#8595a1",
+                    "inverse-on-surface": "#f2f1ec",
+                    "surface-bright": "#fbf9f4",
+                    "on-tertiary-container": "#1f2e37",
+                    "tertiary": "#51606b",
+                    "secondary-fixed": "#ffdbd1",
+                    "surface-container-high": "#eae8e3",
+                    "surface-container": "#f0eee9",
+                    "on-error-container": "#93000a",
+                    "surface-tint": "#56642b",
+                    "error": "#ba1a1a",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#253000",
+                    "on-secondary-fixed": "#380d02",
+                    "on-background": "#1b1c19",
+                    "error-container": "#ffdad6",
+                    "surface": "#fbf9f4",
+                    "primary": "#56642b",
+                    "secondary": "#8b4e3b",
+                    "primary-container": "#8a9a5b",
+                    "on-surface": "#1b1c19",
+                    "on-surface-variant": "#46483c",
+                    "on-primary-fixed": "#161f00",
+                    "tertiary-fixed": "#d5e5f1",
+                    "on-primary-fixed-variant": "#3e4c16",
+                    "secondary-container": "#fdad96",
+                    "outline-variant": "#c6c8b8",
+                    "on-tertiary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#bdce89",
+                    "on-secondary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#d9eaa3",
+                    "surface-container-highest": "#e4e2dd",
+                    "on-tertiary-fixed": "#0e1d26",
+                    "surface-dim": "#dbdad5",
+                    "inverse-surface": "#30312e",
+                    "tertiary-fixed-dim": "#b9c9d5",
+                    "inverse-primary": "#bdce89",
+                    "surface-variant": "#e4e2dd",
+                    "outline": "#76786b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans", "sans-serif"],
+                    "body": ["Work Sans", "sans-serif"],
+                    "label": ["Work Sans", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" opacity="0.04"/%3E%3C/svg%3E');
+            background-color: #fbf9f4; /* surface */
+        }
+        .ghost-border {
+            border: 1px solid rgba(198, 200, 184, 0.3); /* outline-variant at 30% */
+            border-radius: 0.25rem 0.375rem 0.25rem 0.375rem; /* Irregular radius */
+        }
+        .glass-panel {
+            background-color: rgba(251, 249, 244, 0.85); /* surface at 85% */
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="font-body text-on-surface min-h-screen flex flex-col items-center pt-24 px-4 sm:px-6 lg:px-8">
+<!-- Search Section -->
+<main class="w-full max-w-4xl flex flex-col gap-8">
+<!-- Search Bar Container -->
+<div class="relative w-full group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-primary">
+<span class="material-symbols-outlined text-3xl font-light" data-icon="pets">pets</span>
+</div>
+<input class="w-full pl-14 pr-4 py-5 text-xl font-headline bg-surface-container-lowest ghost-border shadow-[0_24px_24px_rgba(27,28,25,0.04)] focus:outline-none focus:ring-0 focus:border-b-primary transition-all duration-300 placeholder-on-surface-variant/50 text-on-surface rounded-xl" placeholder="Search your journal..." style="border-bottom-width: 1.5px;" type="text"/>
+<div class="absolute inset-y-0 right-0 pr-4 flex items-center space-x-2">
+<span class="material-symbols-outlined text-outline-variant hover:text-primary cursor-pointer transition-colors duration-300" data-icon="mic">mic</span>
+<span class="material-symbols-outlined text-outline-variant hover:text-primary cursor-pointer transition-colors duration-300" data-icon="center_focus_strong">center_focus_strong</span>
+</div>
+<!-- Watercolor focus effect (simulated via absolute div) -->
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container/0 via-primary-container/5 to-primary-container/0 opacity-0 group-focus-within:opacity-100 pointer-events-none rounded-xl transition-opacity duration-300"></div>
+</div>
+<!-- Filters -->
+<div class="flex flex-wrap items-center gap-3">
+<button class="px-5 py-1.5 rounded-full bg-secondary-container text-on-secondary-container font-label text-sm font-semibold tracking-wide transition-all duration-300">All</button>
+<button class="px-5 py-1.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label text-sm hover:bg-surface-variant transition-all duration-300">History</button>
+<button class="px-5 py-1.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label text-sm hover:bg-surface-variant transition-all duration-300">Bookmarks</button>
+<button class="px-5 py-1.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label text-sm hover:bg-surface-variant transition-all duration-300">Tabs</button>
+<div class="flex-grow"></div>
+<span class="text-xs text-outline font-label">12,403 items indexed</span>
+</div>
+<!-- Results List -->
+<div class="flex flex-col gap-2 mt-4">
+<!-- Result Item 1 -->
+<div class="group flex flex-col p-5 bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-all duration-300 ghost-border relative overflow-hidden">
+<div class="flex items-start gap-4">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined text-lg" data-icon="public">public</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-4 mb-1">
+<h3 class="font-headline font-bold text-lg text-on-surface truncate tracking-tight">Modern Architecture Patterns</h3>
+<span class="text-xs font-label text-outline whitespace-nowrap">2 hours ago</span>
+</div>
+<p class="text-sm font-label text-secondary truncate mb-2">archdaily.com/patterns/modern</p>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-1">An in-depth exploration of brutalist concrete forms intersecting with sustainable glass facades in urban environments.</p>
+</div>
+</div>
+<!-- Interactive wash on hover -->
+<div class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-primary-container opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+<!-- Result Item 2 (Active/Selected Feel) -->
+<div class="group flex flex-col p-5 bg-surface-container-highest rounded-lg transition-all duration-300 ghost-border relative overflow-hidden shadow-[0_8px_16px_rgba(27,28,25,0.02)] scale-[1.01]">
+<div class="flex items-start gap-4">
+<div class="w-8 h-8 rounded bg-surface-container-lowest flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined text-lg" data-icon="bookmark">bookmark</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-4 mb-1">
+<h3 class="font-headline font-bold text-lg text-on-surface truncate tracking-tight">Bauhaus Typography Principles</h3>
+<span class="text-xs font-label text-outline whitespace-nowrap">Yesterday</span>
+</div>
+<p class="text-sm font-label text-secondary truncate mb-2">designhistory.org/bauhaus/type</p>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-1">Examining Herbert Bayer's universal alphabet and its lasting impact on digital sans-serif typefaces today.</p>
+</div>
+</div>
+<!-- Active marker -->
+<div class="absolute inset-y-0 left-0 w-1 bg-secondary opacity-100"></div>
+</div>
+<!-- Result Item 3 -->
+<div class="group flex flex-col p-5 bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-all duration-300 ghost-border relative overflow-hidden">
+<div class="flex items-start gap-4">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined text-lg" data-icon="history">history</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-4 mb-1">
+<h3 class="font-headline font-bold text-lg text-on-surface truncate tracking-tight">Sustainable Materials Database</h3>
+<span class="text-xs font-label text-outline whitespace-nowrap">Oct 12</span>
+</div>
+<p class="text-sm font-label text-secondary truncate mb-2">ecobuild.dev/materials</p>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-1">A comprehensive index of recycled timber, low-VOC paints, and thermal mass concrete suppliers.</p>
+</div>
+</div>
+<div class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-primary-container opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+<!-- Result Item 4 -->
+<div class="group flex flex-col p-5 bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-all duration-300 ghost-border relative overflow-hidden">
+<div class="flex items-start gap-4">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined text-lg" data-icon="tab">tab</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-4 mb-1">
+<h3 class="font-headline font-bold text-lg text-on-surface truncate tracking-tight">Client Presentation - Smith Residence</h3>
+<span class="text-xs font-label text-outline whitespace-nowrap">Oct 10</span>
+</div>
+<p class="text-sm font-label text-secondary truncate mb-2">figma.com/file/smith-residence-v2</p>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-1">Final render drafts for the living room extension including natural light studies.</p>
+</div>
+</div>
+<div class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-primary-container opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+</div>
+<!-- Load More (Tertiary Button Style) -->
+<div class="flex justify-center mt-6 mb-24">
+<button class="font-headline text-sm font-bold text-primary hover:text-primary-container transition-colors duration-300 flex items-center gap-2">
+<span>View Older Entries</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_downward">arrow_downward</span>
+</button>
+</div>
+</main>
+</body></html>

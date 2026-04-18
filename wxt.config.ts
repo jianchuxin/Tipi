@@ -1,14 +1,26 @@
-import { defineConfig, type WxtConfigEnv } from "wxt";
+import { defineConfig } from "wxt";
 
 export default defineConfig({
   srcDir: "src",
   modules: ["@wxt-dev/module-react"],
-  manifest: ({ browser, manifestVersion }: WxtConfigEnv) => ({
+  manifest: ({ browser, manifestVersion }) => ({
     name: "Tipi",
     description: "Quickly find and jump back to websites from browser history.",
-    permissions: ["history", "storage", "tabs"],
+    icons: {
+      16: "/icon.png",
+      32: "/icon.png",
+      48: "/icon.png",
+      128: "/icon.png"
+    },
+    permissions: ["history", "storage", "tabs", "windows"],
     action: {
-      default_title: "Open Tipi"
+      default_title: "Open Tipi",
+      default_icon: {
+        16: "/icon.png",
+        32: "/icon.png",
+        48: "/icon.png",
+        128: "/icon.png"
+      }
     },
     commands: {
       "tipi.open-search": {

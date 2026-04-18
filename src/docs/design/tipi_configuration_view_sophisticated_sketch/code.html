@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tipi Configuration View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Work+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "background": "#fbf9f4",
+                      "on-tertiary-fixed-variant": "#3a4953",
+                      "on-secondary-container": "#793f2d",
+                      "surface-container-low": "#f5f3ee",
+                      "secondary-fixed-dim": "#ffb59f",
+                      "on-secondary-fixed-variant": "#6f3726",
+                      "tertiary-container": "#8595a1",
+                      "inverse-on-surface": "#f2f1ec",
+                      "surface-bright": "#fbf9f4",
+                      "on-tertiary-container": "#1f2e37",
+                      "tertiary": "#51606b",
+                      "secondary-fixed": "#ffdbd1",
+                      "surface-container-high": "#eae8e3",
+                      "surface-container": "#f0eee9",
+                      "on-error-container": "#93000a",
+                      "surface-tint": "#56642b",
+                      "error": "#ba1a1a",
+                      "on-primary": "#ffffff",
+                      "on-primary-container": "#253000",
+                      "on-secondary-fixed": "#380d02",
+                      "on-background": "#1b1c19",
+                      "error-container": "#ffdad6",
+                      "surface": "#fbf9f4",
+                      "primary": "#56642b",
+                      "secondary": "#8b4e3b",
+                      "primary-container": "#8a9a5b",
+                      "on-surface": "#1b1c19",
+                      "on-surface-variant": "#46483c",
+                      "on-primary-fixed": "#161f00",
+                      "tertiary-fixed": "#d5e5f1",
+                      "on-primary-fixed-variant": "#3e4c16",
+                      "secondary-container": "#fdad96",
+                      "outline-variant": "#c6c8b8",
+                      "on-tertiary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "primary-fixed-dim": "#bdce89",
+                      "on-secondary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed": "#d9eaa3",
+                      "surface-container-highest": "#e4e2dd",
+                      "on-tertiary-fixed": "#0e1d26",
+                      "surface-dim": "#dbdad5",
+                      "inverse-surface": "#30312e",
+                      "tertiary-fixed-dim": "#b9c9d5",
+                      "inverse-primary": "#bdce89",
+                      "surface-variant": "#e4e2dd",
+                      "outline": "#76786b"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body": [
+                              "Work Sans"
+                      ],
+                      "label": [
+                              "Work Sans"
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-surface font-body min-h-screen selection:bg-primary-container/30 selection:text-on-primary-container antialiased">
+<!-- JSON Component: TopNavBar -->
+<nav class="bg-[#fbf9f4]/85 dark:bg-[#1b1c19]/85 backdrop-blur-md flex justify-between items-center w-full px-6 py-3 max-w-full docked full-width top-0 border-b-0 shadow-[0_24px_24px_rgba(27,28,25,0.04)] relative z-50">
+<div class="flex items-center gap-12">
+<div class="text-xl font-bold text-[#1b1c19] dark:text-[#fbf9f4] font-['Plus_Jakarta_Sans']">
+                Tipi
+            </div>
+<div class="hidden md:flex gap-8">
+<!-- Search (Inactive) -->
+<a class="font-['Plus_Jakarta_Sans'] font-bold tracking-tight text-[#46483c] dark:text-[#c6c8b8] hover:text-[#1b1c19] hover:bg-[#f5f3ee] dark:hover:bg-[#46483c]/20 transition-colors duration-300 px-3 py-1 rounded-DEFAULT active:scale-95 transition-transform duration-200" href="#">
+                    Search
+                </a>
+<!-- Dashboard (Inactive) -->
+<a class="font-['Plus_Jakarta_Sans'] font-bold tracking-tight text-[#46483c] dark:text-[#c6c8b8] hover:text-[#1b1c19] hover:bg-[#f5f3ee] dark:hover:bg-[#46483c]/20 transition-colors duration-300 px-3 py-1 rounded-DEFAULT active:scale-95 transition-transform duration-200" href="#">
+                    Dashboard
+                </a>
+<!-- Settings (Active) -->
+<a class="font-['Plus_Jakarta_Sans'] font-bold tracking-tight text-[#56642b] dark:text-[#8a9a5b] border-b-2 border-[#56642b] pb-1 px-3 py-1 active:scale-95 transition-transform duration-200" href="#">
+                    Settings
+                </a>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full text-[#46483c] dark:text-[#c6c8b8] hover:text-[#1b1c19] hover:bg-[#f5f3ee] dark:hover:bg-[#46483c]/20 transition-colors duration-300 active:scale-95 transition-transform duration-200 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="sync" style="font-variation-settings: 'FILL' 0;">sync</span>
+</button>
+<button class="p-2 rounded-full text-[#46483c] dark:text-[#c6c8b8] hover:text-[#1b1c19] hover:bg-[#f5f3ee] dark:hover:bg-[#46483c]/20 transition-colors duration-300 active:scale-95 transition-transform duration-200 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="account_circle" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</div>
+<!-- Separation Logic -->
+<div class="bg-gradient-to-r from-[#8a9a5b]/10 to-transparent h-[2px] absolute bottom-0 left-0 w-full pointer-events-none"></div>
+</nav>
+<!-- Main Canvas -->
+<main class="max-w-6xl mx-auto px-6 md:px-12 py-16 flex flex-col gap-16 relative">
+<!-- Header Section with Watercolor Wash -->
+<header class="relative">
+<div class="absolute -top-12 -left-12 w-64 h-64 bg-gradient-to-br from-primary-container/20 to-transparent rounded-full blur-[60px] pointer-events-none" data-alt="Soft, diffused watercolor sage green circular bloom blending into a cream background."></div>
+<h1 class="font-headline text-4xl md:text-5xl font-extrabold tracking-[-0.02em] text-on-surface relative z-10">
+                Extension Settings
+            </h1>
+<p class="font-label text-on-surface-variant mt-3 text-lg max-w-2xl relative z-10">
+                Manage your local index, synchronization protocols, and behavioral parameters.
+            </p>
+</header>
+<!-- Section 1: Data Overview -->
+<section class="flex flex-col gap-6 relative z-10">
+<div class="flex items-center gap-4">
+<h2 class="font-headline text-xl font-bold tracking-tight text-on-surface">Data Overview</h2>
+<div class="flex-grow h-[1px] bg-gradient-to-r from-outline-variant/30 to-transparent"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Stat Card 1 -->
+<div class="bg-surface-container-lowest ring-1 ring-outline-variant/30 rounded-xl p-6 shadow-[0_24px_24px_rgba(27,28,25,0.02)] hover:bg-surface-container-low transition-colors duration-300 flex flex-col gap-2 relative overflow-hidden group">
+<span class="material-symbols-outlined absolute top-4 right-4 text-5xl text-primary/5 group-hover:text-primary/10 transition-colors" data-icon="description" style="font-variation-settings: 'FILL' 0;">description</span>
+<p class="font-headline text-3xl font-bold text-primary">2,481</p>
+<p class="font-label text-sm text-on-surface-variant font-medium">Pages Indexed</p>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-surface-container-lowest ring-1 ring-outline-variant/30 rounded-xl p-6 shadow-[0_24px_24px_rgba(27,28,25,0.02)] hover:bg-surface-container-low transition-colors duration-300 flex flex-col gap-2 relative overflow-hidden group">
+<span class="material-symbols-outlined absolute top-4 right-4 text-5xl text-primary/5 group-hover:text-primary/10 transition-colors" data-icon="history_toggle_off" style="font-variation-settings: 'FILL' 0;">history_toggle_off</span>
+<p class="font-headline text-3xl font-bold text-on-surface">12 <span class="text-xl text-on-surface-variant font-semibold">min ago</span></p>
+<p class="font-label text-sm text-on-surface-variant font-medium">Last Sync</p>
+</div>
+<!-- Stat Card 3 -->
+<div class="bg-surface-container-lowest ring-1 ring-outline-variant/30 rounded-xl p-6 shadow-[0_24px_24px_rgba(27,28,25,0.02)] hover:bg-surface-container-low transition-colors duration-300 flex flex-col gap-2 relative overflow-hidden group">
+<span class="material-symbols-outlined absolute top-4 right-4 text-5xl text-primary/5 group-hover:text-primary/10 transition-colors" data-icon="dns" style="font-variation-settings: 'FILL' 0;">dns</span>
+<p class="font-headline text-3xl font-bold text-on-surface">14.2 <span class="text-xl text-on-surface-variant font-semibold">MB</span></p>
+<p class="font-label text-sm text-on-surface-variant font-medium">Storage Used</p>
+</div>
+</div>
+</section>
+<!-- Section 2: Sync Controls -->
+<section class="flex flex-col gap-6 relative z-10">
+<div class="flex items-center gap-4">
+<h2 class="font-headline text-xl font-bold tracking-tight text-on-surface">Sync Controls</h2>
+<div class="flex-grow h-[1px] bg-gradient-to-r from-outline-variant/30 to-transparent"></div>
+</div>
+<div class="bg-surface-container p-8 rounded-xl ring-1 ring-outline-variant/30 shadow-[0_24px_24px_rgba(27,28,25,0.03)] flex flex-col md:flex-row items-start md:items-center justify-between gap-8 relative overflow-hidden">
+<!-- Marker Accent -->
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-secondary opacity-80"></div>
+<div class="flex flex-col gap-2 max-w-lg pl-2">
+<h3 class="font-headline text-lg font-bold text-on-surface">Manual Synchronization</h3>
+<p class="font-label text-sm text-on-surface-variant leading-relaxed">
+                        Force a deep sync of your local index with the cloud reservoir. This process may take a few moments depending on your recent browsing volume.
+                    </p>
+</div>
+<div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+<!-- Primary Button (Gradient) -->
+<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg px-6 py-3 font-label font-bold text-sm shadow-[0_8px_16px_rgba(86,100,43,0.15)] hover:shadow-[0_12px_24px_rgba(86,100,43,0.25)] hover:-translate-y-[1px] transition-all duration-300 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="cloud_sync" style="font-variation-settings: 'FILL' 0;">cloud_sync</span>
+                        Sync History Now
+                    </button>
+<!-- Secondary Button (Ghost) -->
+<button class="bg-transparent ring-1 ring-outline-variant/60 text-secondary rounded-lg px-6 py-3 font-label font-bold text-sm hover:bg-surface-container-highest transition-colors duration-300 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete_sweep" style="font-variation-settings: 'FILL' 0;">delete_sweep</span>
+                        Clear Local Cache
+                    </button>
+</div>
+</div>
+</section>
+<!-- Section 3: Advanced Settings (Dense List) -->
+<section class="flex flex-col gap-6 relative z-10">
+<div class="flex items-center gap-4">
+<h2 class="font-headline text-xl font-bold tracking-tight text-on-surface">Advanced Parameters</h2>
+<div class="flex-grow h-[1px] bg-gradient-to-r from-outline-variant/30 to-transparent"></div>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Setting Item 1 (Active/On) -->
+<div class="bg-surface-container-lowest ring-1 ring-outline-variant/20 hover:ring-outline-variant/50 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 group">
+<div class="flex flex-col gap-1">
+<h4 class="font-headline text-base font-semibold text-on-surface group-hover:text-primary transition-colors">Auto-sync daily</h4>
+<p class="font-label text-sm text-on-surface-variant">Automatically back up your index every 24 hours in the background.</p>
+</div>
+<!-- Active Chip Toggle -->
+<button class="bg-secondary-container text-on-secondary-container px-4 py-2 rounded-full font-label text-sm font-bold flex items-center justify-center gap-2 self-start sm:self-auto hover:bg-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        Enabled
+                    </button>
+</div>
+<!-- Setting Item 2 (Inactive/Off) -->
+<div class="bg-surface-container-lowest ring-1 ring-outline-variant/20 hover:ring-outline-variant/50 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 group">
+<div class="flex flex-col gap-1">
+<h4 class="font-headline text-base font-semibold text-on-surface group-hover:text-primary transition-colors">Index private tabs</h4>
+<p class="font-label text-sm text-on-surface-variant">Include browsing data from Incognito/Private sessions in the local ledger.</p>
+</div>
+<!-- Inactive Chip Toggle -->
+<button class="bg-surface-container-highest text-on-surface-variant px-4 py-2 rounded-full font-label text-sm font-medium flex items-center justify-center gap-2 self-start sm:self-auto hover:bg-surface-dim transition-colors ring-1 ring-outline-variant/30">
+<span class="material-symbols-outlined text-[18px]" data-icon="cancel" style="font-variation-settings: 'FILL' 0;">cancel</span>
+                        Disabled
+                    </button>
+</div>
+<!-- Setting Item 3 (Dropdown/Select Style) -->
+<div class="bg-surface-container-lowest ring-1 ring-outline-variant/20 hover:ring-outline-variant/50 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 group">
+<div class="flex flex-col gap-1">
+<h4 class="font-headline text-base font-semibold text-on-surface group-hover:text-primary transition-colors">Dark mode (Auto)</h4>
+<p class="font-label text-sm text-on-surface-variant">Follow the system preference for the interface theme.</p>
+</div>
+<!-- Dropdown Pill -->
+<button class="bg-surface flex items-center justify-between gap-3 ring-1 ring-outline-variant/40 rounded-lg px-4 py-2 self-start sm:self-auto hover:bg-surface-container-low transition-colors min-w-[140px]">
+<span class="font-label text-sm font-medium text-on-surface">System Auto</span>
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="expand_more" style="font-variation-settings: 'FILL' 0;">expand_more</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+</body></html>
