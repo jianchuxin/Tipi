@@ -1,8 +1,9 @@
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { browser } from "wxt/browser";
+import { browser, type Browser } from "wxt/browser";
 import { SearchCommandCenter } from "@/components/SearchCommandCenter";
-import type { SearchResult, TipiStatsResponse } from "@/types/tipi";
+import { DEFAULT_TIPI_SETTINGS, getTipiSettings, TIPI_SETTINGS_STORAGE_KEY } from "@/lib/settings/tipi-settings";
+import type { SearchResult, TipiSettings, TipiStatsResponse } from "@/types/tipi";
 
 const initialStats: TipiStatsResponse = {
   totalRecords: 0,
@@ -43,6 +44,7 @@ export default function PopupApp() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [stats, setStats] = useState<TipiStatsResponse>(initialStats);
+  const [settings, setSettings] = useState<TipiSettings>(DEFAULT_TIPI_SETTINGS);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -54,6 +56,29 @@ export default function PopupApp() {
 
     return () => {
       window.cancelAnimationFrame(frameId);
+    };
+  }, []);
+
+  useEffect(() => {
+    void getTipiSettings().then(setSettings).catch(() => {
+      setSettings(DEFAULT_TIPI_SETTINGS);
+    });
+
+    const listener = (
+      changes: Record<string, Browser.storage.StorageChange>,
+      areaName: string
+    ) => {
+      if (areaName !== "local" || !changes[TIPI_SETTINGS_STORAGE_KEY]) {
+        return;
+      }
+
+      void getTipiSettings().then(setSettings);
+    };
+
+    browser.storage.onChanged.addListener(listener);
+
+    return () => {
+      browser.storage.onChanged.removeListener(listener);
     };
   }, []);
 
@@ -136,11 +161,16 @@ export default function PopupApp() {
     setSelectedIndex(0);
   }, [results]);
 
-  async function openUrl(url: string, recordId: number) {
+  async function openUrl(
+    url: string,
+    recordId: number,
+    options?: { openInNewTab?: boolean }
+  ) {
     await browser.runtime.sendMessage({
       type: "tipi.open-url",
       url,
-      recordId
+      recordId,
+      openInNewTab: options?.openInNewTab ?? true
     });
     window.close();
   }
@@ -169,7 +199,9 @@ export default function PopupApp() {
       const selected = results[selectedIndex];
 
       if (selected) {
-        void openUrl(selected.url, selected.id);
+        void openUrl(selected.url, selected.id, {
+          openInNewTab: true
+        });
       }
     }
   }
@@ -199,8 +231,8 @@ export default function PopupApp() {
         indexedCount={stats.totalRecords}
         isLoading={isLoading}
         inputRef={inputRef}
-        onOpen={(result) => {
-          void openUrl(result.url, result.id);
+        onOpen={(result, options) => {
+          void openUrl(result.url, result.id, options);
         }}
         onQueryChange={setQuery}
         onQueryKeyDown={handleKeyDown}
@@ -214,6 +246,7 @@ export default function PopupApp() {
         query={query}
         results={results}
         showResults={query.trim().length > 0}
+        showFavicons={settings.showFavicons}
         selectedId={results[selectedIndex]?.id ?? null}
       />
     </main>

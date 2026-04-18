@@ -1,8 +1,9 @@
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { browser } from "wxt/browser";
+import { browser, type Browser } from "wxt/browser";
 import { SearchCommandCenter } from "@/components/SearchCommandCenter";
-import type { SearchResult, TipiMessage, TipiStatsResponse } from "@/types/tipi";
+import { DEFAULT_TIPI_SETTINGS, getTipiSettings, TIPI_SETTINGS_STORAGE_KEY } from "@/lib/settings/tipi-settings";
+import type { SearchResult, TipiMessage, TipiSettings, TipiStatsResponse } from "@/types/tipi";
 
 function isSearchResultArray(value: unknown): value is SearchResult[] {
   return Array.isArray(value);
@@ -44,9 +45,33 @@ export default function OverlayApp() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [stats, setStats] = useState<TipiStatsResponse>(initialStats);
+  const [settings, setSettings] = useState<TipiSettings>(DEFAULT_TIPI_SETTINGS);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getTipiSettings().then(setSettings).catch(() => {
+      setSettings(DEFAULT_TIPI_SETTINGS);
+    });
+
+    const listener = (
+      changes: Record<string, Browser.storage.StorageChange>,
+      areaName: string
+    ) => {
+      if (areaName !== "local" || !changes[TIPI_SETTINGS_STORAGE_KEY]) {
+        return;
+      }
+
+      void getTipiSettings().then(setSettings);
+    };
+
+    browser.storage.onChanged.addListener(listener);
+
+    return () => {
+      browser.storage.onChanged.removeListener(listener);
+    };
+  }, []);
 
   useEffect(() => {
     const listener = (message: TipiMessage) => {
@@ -170,11 +195,15 @@ export default function OverlayApp() {
     setSelectedIndex(0);
   }, [results]);
 
-  async function openResult(result: SearchResult) {
+  async function openResult(
+    result: SearchResult,
+    options?: { openInNewTab?: boolean }
+  ) {
     await browser.runtime.sendMessage({
       type: "tipi.open-url",
       url: result.url,
-      recordId: result.id
+      recordId: result.id,
+      openInNewTab: options?.openInNewTab ?? false
     });
 
     setVisible(false);
@@ -216,7 +245,9 @@ export default function OverlayApp() {
       const selected = results[selectedIndex];
 
       if (selected) {
-        void openResult(selected);
+        void openResult(selected, {
+          openInNewTab: event.metaKey || event.ctrlKey
+        });
       }
     }
   }
@@ -234,7 +265,7 @@ export default function OverlayApp() {
       return "No matching page found.";
     }
 
-    return "Enter opens the selected result. Esc closes the panel.";
+    return "Enter opens here. Cmd/Ctrl + Enter opens a new tab. Esc closes the panel.";
   }, [errorMessage, isLoading, query, results.length]);
 
   if (!visible) {
@@ -277,7 +308,7 @@ export default function OverlayApp() {
             errorMessage={errorMessage}
             footerLabel={
               query.trim() && results.length > 0
-                ? `${selectedIndex + 1}/${results.length} selected. Enter opens the current entry.`
+                ? `${selectedIndex + 1}/${results.length} selected. Enter opens here. Cmd/Ctrl + Enter opens a new tab.`
                 : "Results appear after you start typing."
             }
             helperText={helperLabel}
@@ -285,8 +316,8 @@ export default function OverlayApp() {
             isLoading={isLoading}
             inputRef={inputRef}
             onClose={closeOverlay}
-            onOpen={(result) => {
-              void openResult(result);
+            onOpen={(result, options) => {
+              void openResult(result, options);
             }}
             onQueryChange={setQuery}
             onQueryKeyDown={handleKeyDown}
@@ -300,6 +331,7 @@ export default function OverlayApp() {
             query={query}
             results={results}
             showResults={query.trim().length > 0}
+            showFavicons={settings.showFavicons}
             selectedId={results[selectedIndex]?.id ?? null}
           />
         </section>

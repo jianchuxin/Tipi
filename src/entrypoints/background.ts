@@ -7,6 +7,12 @@ import {
 } from "@/lib/storage/history-db";
 import { fetchRecentHistory, mapHistoryItemToRecord } from "@/lib/history/fetch-history";
 import {
+  DEFAULT_TIPI_SETTINGS,
+  getTipiSettings,
+  normalizeTipiSettings,
+  TIPI_SETTINGS_STORAGE_KEY
+} from "@/lib/settings/tipi-settings";
+import {
   clearSearchIndex,
   removeSearchRecordsByUrls,
   rebuildSearchIndex,
@@ -14,16 +20,69 @@ import {
   upsertSearchRecords,
   touchSearchRecord
 } from "@/lib/search/search-index";
-import type { TipiMessage, TipiSyncResponse } from "@/types/tipi";
+import type { TipiMessage, TipiSettings, TipiSyncResponse } from "@/types/tipi";
 
-const HISTORY_LIMIT = 5000;
 const HISTORY_WINDOW_DAYS = 90;
+let popupWindowId: number | null = null;
+let currentSettings: TipiSettings = DEFAULT_TIPI_SETTINGS;
+
+function getExtensionPageUrl(path: string) {
+  return (browser.runtime as typeof browser.runtime & {
+    getURL: (url: string) => string;
+  }).getURL(path);
+}
 
 function getHistoryStartTime() {
   return Date.now() - HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 }
 
+async function getExistingPopupWindow() {
+  if (typeof popupWindowId === "number") {
+    try {
+      return await browser.windows.get(popupWindowId, { populate: true });
+    } catch {
+      popupWindowId = null;
+    }
+  }
+
+  const popupUrl = getExtensionPageUrl("/popup.html");
+  const popupTabs = await browser.tabs.query({ url: popupUrl });
+  const popupTab = popupTabs[0];
+
+  if (!popupTab?.windowId) {
+    return null;
+  }
+
+  const existingWindow = await browser.windows.get(popupTab.windowId, {
+    populate: true
+  });
+  popupWindowId = existingWindow.id ?? null;
+  return existingWindow;
+}
+
+async function focusPopupWindow(windowId: number, tabId?: number) {
+  await browser.windows.update(windowId, {
+    focused: true
+  });
+
+  if (typeof tabId === "number") {
+    await browser.tabs.update(tabId, {
+      active: true
+    });
+  }
+}
+
 async function openPopupWindow() {
+  const existingWindow = await getExistingPopupWindow();
+
+  if (existingWindow?.id) {
+    const popupTab = existingWindow.tabs?.find((tab) =>
+      tab.url?.startsWith(getExtensionPageUrl("/popup.html"))
+    );
+    await focusPopupWindow(existingWindow.id, popupTab?.id);
+    return;
+  }
+
   const currentWindow = await browser.windows.getCurrent();
   const width =
     typeof currentWindow.width === "number"
@@ -42,8 +101,8 @@ async function openPopupWindow() {
       ? currentWindow.top + Math.max(40, Math.round((currentWindow.height - height) / 2))
       : undefined;
 
-  await browser.windows.create({
-    url: browser.runtime.getURL("/popup.html"),
+  const createdWindow = await browser.windows.create({
+    url: getExtensionPageUrl("/popup.html"),
     type: "popup",
     width,
     height,
@@ -51,6 +110,8 @@ async function openPopupWindow() {
     top,
     focused: true
   });
+
+  popupWindowId = createdWindow?.id ?? null;
 }
 
 async function toggleOverlayInActiveTab() {
@@ -76,7 +137,7 @@ async function toggleOverlayInActiveTab() {
 
 async function syncHistoryIndex(): Promise<TipiSyncResponse> {
   const records = await fetchRecentHistory({
-    maxResults: HISTORY_LIMIT,
+    maxResults: currentSettings.maxIndexedRecords,
     startTime: getHistoryStartTime()
   });
 
@@ -91,6 +152,12 @@ async function syncHistoryIndex(): Promise<TipiSyncResponse> {
 
 async function bootstrap() {
   try {
+    currentSettings = await getTipiSettings();
+
+    if (!currentSettings.autoSyncEnabled) {
+      return;
+    }
+
     const syncResult = await syncHistoryIndex();
     console.info("[Tipi] history synced", syncResult);
   } catch (error) {
@@ -99,6 +166,10 @@ async function bootstrap() {
 }
 
 async function handleHistoryVisited(item: Browser.history.HistoryItem) {
+  if (!currentSettings.autoSyncEnabled) {
+    return;
+  }
+
   const record = mapHistoryItemToRecord(item);
 
   if (!record) {
@@ -112,6 +183,10 @@ async function handleHistoryVisited(item: Browser.history.HistoryItem) {
 async function handleHistoryRemoved(
   removed: Browser.history.RemovedResult
 ) {
+  if (!currentSettings.autoSyncEnabled) {
+    return;
+  }
+
   if (removed.allHistory) {
     await clearHistoryRecords();
     clearSearchIndex();
@@ -128,16 +203,81 @@ async function handleHistoryRemoved(
   removeSearchRecordsByUrls(urls);
 }
 
+async function handleOpenUrl(
+  message: Extract<TipiMessage, { type: "tipi.open-url" }>,
+  sender: Browser.runtime.MessageSender
+) {
+  if (
+    currentSettings.recordOpenEvents &&
+    typeof message.recordId === "number"
+  ) {
+    await touchSearchRecord(message.recordId);
+  }
+
+  const extensionBaseUrl = getExtensionPageUrl("/");
+  const canReuseSenderTab =
+    !message.openInNewTab &&
+    typeof sender.tab?.id === "number" &&
+    typeof sender.tab.url === "string" &&
+    !sender.tab.url.startsWith(extensionBaseUrl);
+
+  if (canReuseSenderTab) {
+    const senderTabId = sender.tab?.id;
+
+    if (typeof senderTabId !== "number") {
+      return;
+    }
+
+    await browser.tabs.update(senderTabId, {
+      url: message.url
+    });
+    return;
+  }
+
+  await browser.tabs.create({
+    url: message.url,
+    active: true
+  });
+}
+
 export default defineBackground({
   main() {
     void bootstrap();
 
+    browser.windows.onRemoved.addListener((windowId) => {
+      if (windowId === popupWindowId) {
+        popupWindowId = null;
+      }
+    });
+
     browser.runtime.onInstalled.addListener(() => {
-      void syncHistoryIndex();
+      if (currentSettings.autoSyncEnabled) {
+        void syncHistoryIndex();
+      }
     });
 
     browser.runtime.onStartup?.addListener(() => {
-      void syncHistoryIndex();
+      if (currentSettings.autoSyncEnabled) {
+        void syncHistoryIndex();
+      }
+    });
+
+    browser.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local" || !changes[TIPI_SETTINGS_STORAGE_KEY]) {
+        return;
+      }
+
+      const previousSettings = currentSettings;
+      currentSettings = normalizeTipiSettings(changes[TIPI_SETTINGS_STORAGE_KEY].newValue);
+
+      const shouldResync =
+        currentSettings.autoSyncEnabled &&
+        (!previousSettings.autoSyncEnabled ||
+          previousSettings.maxIndexedRecords !== currentSettings.maxIndexedRecords);
+
+      if (shouldResync) {
+        void syncHistoryIndex();
+      }
     });
 
     browser.history.onVisited.addListener((item) => {
@@ -157,12 +297,17 @@ export default defineBackground({
     });
 
     browser.runtime.onMessage.addListener(
-      (message: TipiMessage, _sender, sendResponse) => {
+      (message: TipiMessage, sender, sendResponse) => {
         void (async () => {
           try {
             switch (message.type) {
               case "tipi.search":
-                sendResponse(await searchRecords(message.query));
+                sendResponse(
+                  await searchRecords(
+                    message.query,
+                    currentSettings.maxSearchResults
+                  )
+                );
                 return;
               case "tipi.sync-history":
                 sendResponse(await syncHistoryIndex());
@@ -176,8 +321,7 @@ export default defineBackground({
                 sendResponse({ ok: true });
                 return;
               case "tipi.open-url":
-                await touchSearchRecord(message.recordId);
-                await browser.tabs.create({ url: message.url });
+                await handleOpenUrl(message, sender);
                 sendResponse({ ok: true });
                 return;
               default:

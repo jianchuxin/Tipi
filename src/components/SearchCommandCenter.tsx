@@ -15,9 +15,10 @@ type SearchCommandCenterProps = {
   showResults?: boolean;
   selectedId?: number | null;
   footerLabel?: string;
+  showFavicons?: boolean;
   onQueryChange: (value: string) => void;
   onQueryKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
-  onOpen: (result: SearchResult) => void;
+  onOpen: (result: SearchResult, options?: { openInNewTab?: boolean }) => void;
   onSelect?: (result: SearchResult) => void;
   onClose?: () => void;
   inputRef?: RefObject<HTMLInputElement | null>;
@@ -33,6 +34,7 @@ export function SearchCommandCenter({
   showResults = true,
   selectedId,
   footerLabel,
+  showFavicons = true,
   onQueryChange,
   onQueryKeyDown,
   onOpen,
@@ -118,8 +120,10 @@ export function SearchCommandCenter({
               isLoading={isLoading}
               onOpen={onOpen}
               onSelect={onSelect}
+              query={query}
               results={results}
               selectedId={selectedId}
+              showFavicons={showFavicons}
             />
           ) : (
             <div className="flex h-full min-h-[180px] items-center justify-center px-[18px] py-[24px] text-center text-[13px] text-[color:var(--color-muted)]">

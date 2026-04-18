@@ -22,6 +22,14 @@ export type TipiStatsResponse = {
   estimatedStorageBytes: number;
 };
 
+export type TipiSettings = {
+  autoSyncEnabled: boolean;
+  maxIndexedRecords: number;
+  maxSearchResults: number;
+  showFavicons: boolean;
+  recordOpenEvents: boolean;
+};
+
 export type TipiSyncResponse = {
   synced: number;
   at: number;
@@ -48,4 +56,5 @@ export type TipiMessage =
       type: "tipi.open-url";
       url: string;
       recordId: number;
+      openInNewTab?: boolean;
     };

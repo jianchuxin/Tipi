@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 import { BrandMark } from "@/components/BrandMark";
+import { DEFAULT_TIPI_SETTINGS, getTipiSettings, updateTipiSettings } from "@/lib/settings/tipi-settings";
 import {
   CheckCircleIcon,
   ChevronDownIcon,
@@ -15,13 +16,19 @@ import {
   XCircleIcon
 } from "@/components/icons";
 import { formatCompactNumber, formatRelativeDate, formatStorageSize } from "@/lib/utils/format";
-import type { TipiStatsResponse, TipiSyncResponse } from "@/types/tipi";
+import type { TipiSettings, TipiStatsResponse, TipiSyncResponse } from "@/types/tipi";
 
 const initialStats: TipiStatsResponse = {
   totalRecords: 0,
   lastSyncedAt: null,
   estimatedStorageBytes: 0
 };
+
+function getExtensionPageUrl(path: string) {
+  return (browser.runtime as typeof browser.runtime & {
+    getURL: (url: string) => string;
+  }).getURL(path);
+}
 
 function isTipiStatsResponse(value: unknown): value is TipiStatsResponse {
   if (!value || typeof value !== "object") {
@@ -113,8 +120,67 @@ function SettingRow({
   );
 }
 
+function ToggleControl({
+  enabled,
+  onChange
+}: {
+  enabled: boolean;
+  onChange: (nextValue: boolean) => void;
+}) {
+  return (
+    <button
+      className={`inline-flex items-center gap-2 self-start rounded-[999px] px-4 py-2.5 text-sm font-semibold transition sm:self-auto ${
+        enabled
+          ? "journal-chip-active"
+          : "journal-chip ring-1 ring-[color:var(--color-line)]"
+      }`}
+      onClick={() => {
+        onChange(!enabled);
+      }}
+      type="button"
+    >
+      {enabled ? (
+        <CheckCircleIcon className="h-4 w-4" />
+      ) : (
+        <XCircleIcon className="h-4 w-4" />
+      )}
+      {enabled ? "Enabled" : "Disabled"}
+    </button>
+  );
+}
+
+function SelectControl({
+  onChange,
+  options,
+  value
+}: {
+  onChange: (value: string) => void;
+  options: Array<{ label: string; value: string }>;
+  value: string;
+}) {
+  return (
+    <label className="relative inline-flex items-center">
+      <select
+        className="appearance-none rounded-xl border border-[color:var(--color-line)] bg-[rgba(255,255,255,0.76)] px-4 py-2.5 pr-10 text-sm font-medium text-[color:var(--color-ink)] outline-none transition focus:border-[color:var(--color-primary)]"
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+        value={value}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDownIcon className="pointer-events-none absolute right-3 h-4 w-4 text-[color:var(--color-outline)]" />
+    </label>
+  );
+}
+
 export default function OptionsApp() {
   const [stats, setStats] = useState<TipiStatsResponse>(initialStats);
+  const [settings, setSettings] = useState<TipiSettings>(DEFAULT_TIPI_SETTINGS);
   const [isSyncing, setIsSyncing] = useState(false);
   const [message, setMessage] = useState("Tipi is ready.");
 
@@ -148,7 +214,22 @@ export default function OptionsApp() {
 
   useEffect(() => {
     void loadStats();
+    void getTipiSettings().then(setSettings);
   }, []);
+
+  async function handleSettingsChange(
+    patch: Partial<TipiSettings>,
+    successMessage: string
+  ) {
+    try {
+      const nextSettings = await updateTipiSettings(patch);
+      setSettings(nextSettings);
+      setMessage(successMessage);
+    } catch (error) {
+      console.error("[Tipi] settings update failed", error);
+      setMessage("Failed to save settings.");
+    }
+  }
 
   async function handleSync() {
     setIsSyncing(true);
@@ -203,7 +284,7 @@ export default function OptionsApp() {
               <button
                 className="rounded-lg px-3 py-2 font-[var(--font-display)] font-bold tracking-[-0.03em] text-[color:var(--color-muted)] transition hover:bg-[color:var(--color-surface-low)] hover:text-[color:var(--color-ink)]"
                 onClick={() => {
-                  window.open(browser.runtime.getURL("/popup.html"), "_blank", "noopener");
+                  window.open(getExtensionPageUrl("/popup.html"), "_blank", "noopener");
                 }}
                 type="button"
               >
@@ -352,33 +433,106 @@ export default function OptionsApp() {
           <div className="space-y-3">
             <SettingRow
               control={
-                <span className="journal-chip-active inline-flex items-center gap-2 self-start sm:self-auto">
-                  <CheckCircleIcon className="h-4 w-4" />
-                  Enabled
-                </span>
+                <ToggleControl
+                  enabled={settings.autoSyncEnabled}
+                  onChange={(nextValue) => {
+                    void handleSettingsChange(
+                      {
+                        autoSyncEnabled: nextValue
+                      },
+                      nextValue
+                        ? "Auto-sync enabled. Tipi will keep the local index up to date."
+                        : "Auto-sync disabled. Use manual sync to refresh the local index."
+                    );
+                  }}
+                />
               }
               description="Automatically keep the local journal index up to date while you browse."
               title="Auto-sync browsing history"
             />
             <SettingRow
               control={
-                <span className="journal-chip inline-flex items-center gap-2 self-start ring-1 ring-[color:var(--color-line)] sm:self-auto">
-                  <XCircleIcon className="h-4 w-4" />
-                  Disabled
-                </span>
+                <SelectControl
+                  onChange={(value) => {
+                    void handleSettingsChange(
+                      {
+                        maxIndexedRecords: Number(value)
+                      },
+                      `Tipi will keep up to ${formatCompactNumber(Number(value))} indexed pages after the next sync.`
+                    );
+                  }}
+                  options={[
+                    { label: "2,500 pages", value: "2500" },
+                    { label: "5,000 pages", value: "5000" },
+                    { label: "10,000 pages", value: "10000" },
+                    { label: "20,000 pages", value: "20000" }
+                  ]}
+                  value={String(settings.maxIndexedRecords)}
+                />
               }
-              description="Private and incognito sessions are excluded from Tipi's local ledger."
-              title="Index private tabs"
+              description="Limit how many recent history records Tipi keeps in the local index after a sync."
+              title="Maximum indexed pages"
             />
             <SettingRow
               control={
-                <span className="inline-flex items-center gap-3 rounded-xl border border-[color:var(--color-line)] bg-[rgba(255,255,255,0.76)] px-4 py-2.5 text-sm font-medium text-[color:var(--color-ink)]">
-                  System Auto
-                  <ChevronDownIcon className="h-4 w-4 text-[color:var(--color-outline)]" />
-                </span>
+                <SelectControl
+                  onChange={(value) => {
+                    void handleSettingsChange(
+                      {
+                        maxSearchResults: Number(value)
+                      },
+                      `Search will now return up to ${value} results per query.`
+                    );
+                  }}
+                  options={[
+                    { label: "8 results", value: "8" },
+                    { label: "12 results", value: "12" },
+                    { label: "20 results", value: "20" },
+                    { label: "30 results", value: "30" }
+                  ]}
+                  value={String(settings.maxSearchResults)}
+                />
               }
-              description="Follow the system preference for theme behavior once multiple themes are available."
-              title="Interface theme"
+              description="Control how many matches Tipi returns into the search panel for each query."
+              title="Maximum search results"
+            />
+            <SettingRow
+              control={
+                <ToggleControl
+                  enabled={settings.showFavicons}
+                  onChange={(nextValue) => {
+                    void handleSettingsChange(
+                      {
+                        showFavicons: nextValue
+                      },
+                      nextValue
+                        ? "Favicons enabled in search results."
+                        : "Favicons hidden from search results."
+                    );
+                  }}
+                />
+              }
+              description="Show site icons in result rows when the browser can provide them."
+              title="Show favicons in results"
+            />
+            <SettingRow
+              control={
+                <ToggleControl
+                  enabled={settings.recordOpenEvents}
+                  onChange={(nextValue) => {
+                    void handleSettingsChange(
+                      {
+                        recordOpenEvents: nextValue
+                      },
+                      nextValue
+                        ? "Tipi-opened pages will influence ranking."
+                        : "Tipi-opened pages will no longer influence ranking."
+                    );
+                  }}
+                />
+              }
+              description="Use results reopened from Tipi as a light ranking signal so repeated destinations surface faster."
+              title="Use Tipi opens for ranking"
             />
           </div>
         </section>
