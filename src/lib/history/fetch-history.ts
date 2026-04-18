@@ -1,5 +1,5 @@
 import { browser, type Browser } from "wxt/browser";
-import { hashUrl, normalizeText } from "@/lib/utils/string";
+import { hashUrl, normalizeText, normalizeUrlForSearch } from "@/lib/utils/string";
 import type { HistoryRecord } from "@/types/tipi";
 
 type FetchRecentHistoryOptions = {
@@ -15,7 +15,7 @@ export function mapHistoryItemToRecord(
   }
 
   try {
-    const hostname = new URL(item.url).hostname;
+    const hostname = new URL(item.url).hostname.replace(/^www\./, "");
 
     return {
       id: hashUrl(item.url),
@@ -24,7 +24,7 @@ export function mapHistoryItemToRecord(
       normalizedTitle: normalizeText(item.title || ""),
       hostname,
       normalizedHostname: normalizeText(hostname),
-      normalizedUrl: normalizeText(item.url),
+      normalizedUrl: normalizeUrlForSearch(item.url),
       lastVisitedAt: item.lastVisitTime ?? Date.now(),
       visitCount: item.visitCount ?? 0,
       typedCount: item.typedCount ?? 0,

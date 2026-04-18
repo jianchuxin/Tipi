@@ -92,10 +92,7 @@ export function SearchCommandCenter({
         </label>
 
         <div className="mt-[14px] flex flex-wrap items-center gap-[8px] text-[13px]">
-          <span className="journal-chip-active">All</span>
-          <span className="journal-chip">History</span>
-          <span className="journal-chip">Bookmarks</span>
-          <span className="journal-chip">Tabs</span>
+          <span className="journal-chip-active">History</span>
           <div className="flex-1" />
           <span className="text-[13px] text-[color:var(--color-outline)]">
             {formatCompactNumber(indexedCount)} items indexed

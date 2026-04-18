@@ -4,6 +4,16 @@ export default defineConfig({
   srcDir: "src",
   modules: ["@wxt-dev/module-react"],
   manifest: ({ browser, manifestVersion }) => ({
+    ...((browser !== "firefox"
+      ? {
+          web_accessible_resources: [
+            {
+              resources: ["_favicon/*"],
+              matches: ["<all_urls>"]
+            }
+          ]
+        }
+      : {}) as object),
     name: "Tipi",
     description: "Quickly find and jump back to websites from browser history.",
     icons: {
@@ -12,7 +22,10 @@ export default defineConfig({
       48: "/icon.png",
       128: "/icon.png"
     },
-    permissions: ["history", "storage", "tabs", "windows"],
+    permissions:
+      browser !== "firefox"
+        ? ["history", "storage", "tabs", "windows", "favicon"]
+        : ["history", "storage", "tabs", "windows"],
     action: {
       default_title: "Open Tipi",
       default_icon: {

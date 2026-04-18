@@ -2,36 +2,189 @@ import {
   getAllHistoryRecords,
   touchHistoryRecordById
 } from "@/lib/storage/history-db";
-import { hashUrl } from "@/lib/utils/string";
+import { hashUrl, normalizeText, tokenizeText } from "@/lib/utils/string";
 import type { HistoryRecord, SearchResult } from "@/types/tipi";
 
 const recordsById = new Map<number, HistoryRecord>();
+const MAX_RESULTS = 12;
 
-function scoreRecord(record: HistoryRecord, query: string) {
-  let score = 0;
+function tokenizeQuery(query: string) {
+  return tokenizeText(query);
+}
 
-  if (record.normalizedTitle.startsWith(query)) {
-    score += 50;
-  } else if (record.normalizedTitle.includes(query)) {
-    score += 30;
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function countWordStarts(value: string, token: string) {
+  if (!value || !token) {
+    return 0;
   }
 
-  if (record.normalizedHostname.includes(query)) {
+  const pattern = new RegExp(`(^|[^a-z0-9])${escapeRegExp(token)}`, "g");
+  return value.match(pattern)?.length ?? 0;
+}
+
+function scoreRecency(timestamp: number) {
+  const ageInDays = Math.max(0, (Date.now() - timestamp) / 86400000);
+
+  if (ageInDays < 1) {
+    return 24;
+  }
+
+  if (ageInDays < 3) {
+    return 18;
+  }
+
+  if (ageInDays < 7) {
+    return 12;
+  }
+
+  if (ageInDays < 30) {
+    return 6;
+  }
+
+  return 0;
+}
+
+function scoreOpenedByTipi(timestamp: number | null) {
+  if (!timestamp) {
+    return 0;
+  }
+
+  const ageInDays = Math.max(0, (Date.now() - timestamp) / 86400000);
+
+  if (ageInDays < 3) {
+    return 18;
+  }
+
+  if (ageInDays < 14) {
+    return 10;
+  }
+
+  return 4;
+}
+
+function scoreRecord(record: HistoryRecord, query: string, tokens: string[]) {
+  let score = 0;
+  const title = record.normalizedTitle;
+  const hostname = record.normalizedHostname;
+  const url = record.normalizedUrl;
+
+  if (title === query) {
+    score += 220;
+  }
+
+  if (hostname === query) {
+    score += 200;
+  }
+
+  if (url === query) {
+    score += 180;
+  }
+
+  if (title.startsWith(query)) {
+    score += 120;
+  } else if (countWordStarts(title, query) > 0) {
+    score += 80;
+  } else if (title.includes(query)) {
+    score += 45;
+  }
+
+  if (hostname.startsWith(query)) {
+    score += 95;
+  } else if (countWordStarts(hostname, query) > 0) {
+    score += 60;
+  } else if (hostname.includes(query)) {
+    score += 34;
+  }
+
+  if (url.startsWith(query)) {
+    score += 60;
+  } else if (url.includes(query)) {
     score += 24;
   }
 
-  if (record.normalizedUrl.includes(query)) {
-    score += 16;
+  let matchedTokenCount = 0;
+
+  for (const token of tokens) {
+    const titleHasToken = title.includes(token);
+    const hostnameHasToken = hostname.includes(token);
+    const urlHasToken = url.includes(token);
+
+    if (titleHasToken || hostnameHasToken || urlHasToken) {
+      matchedTokenCount += 1;
+    }
+
+    if (title.startsWith(token)) {
+      score += 38;
+    } else if (countWordStarts(title, token) > 0) {
+      score += 28;
+    } else if (titleHasToken) {
+      score += 14;
+    }
+
+    if (hostname.startsWith(token)) {
+      score += 32;
+    } else if (countWordStarts(hostname, token) > 0) {
+      score += 20;
+    } else if (hostnameHasToken) {
+      score += 12;
+    }
+
+    if (urlHasToken) {
+      score += 6;
+    }
   }
 
-  score += Math.min(record.visitCount, 20);
-  score += Math.max(0, 10 - Math.floor((Date.now() - record.lastVisitedAt) / 86400000));
-
-  if (record.lastOpenedByTipiAt) {
-    score += 12;
+  if (tokens.length > 1 && matchedTokenCount === tokens.length) {
+    score += 36;
   }
 
-  return score;
+  score += Math.min(record.visitCount, 25) * 1.8;
+  score += Math.min(record.typedCount, 12) * 5;
+  score += scoreRecency(record.lastVisitedAt);
+  score += scoreOpenedByTipi(record.lastOpenedByTipiAt);
+
+  if (record.title.trim().length > 0) {
+    score += 8;
+  }
+
+  return Math.round(score);
+}
+
+function matchesRecord(record: HistoryRecord, tokens: string[]) {
+  if (tokens.length === 0) {
+    return false;
+  }
+
+  return tokens.every((token) => {
+    return (
+      record.normalizedTitle.includes(token) ||
+      record.normalizedHostname.includes(token) ||
+      record.normalizedUrl.includes(token)
+    );
+  });
+}
+
+function compareSearchResults(left: SearchResult, right: SearchResult) {
+  if (right.score !== left.score) {
+    return right.score - left.score;
+  }
+
+  if ((right.lastOpenedByTipiAt ?? 0) !== (left.lastOpenedByTipiAt ?? 0)) {
+    return (right.lastOpenedByTipiAt ?? 0) - (left.lastOpenedByTipiAt ?? 0);
+  }
+
+  if (right.lastVisitedAt !== left.lastVisitedAt) {
+    return right.lastVisitedAt - left.lastVisitedAt;
+  }
+
+  if (right.visitCount !== left.visitCount) {
+    return right.visitCount - left.visitCount;
+  }
+
+  return right.typedCount - left.typedCount;
 }
 
 export function clearSearchIndex() {
@@ -61,7 +214,8 @@ export function removeSearchRecordsByUrls(urls: string[]) {
 }
 
 export async function searchRecords(query: string): Promise<SearchResult[]> {
-  const normalized = query.trim().toLowerCase();
+  const normalized = normalizeText(query);
+  const tokens = tokenizeQuery(query);
 
   if (recordsById.size === 0) {
     await rebuildSearchIndex();
@@ -72,7 +226,7 @@ export async function searchRecords(query: string): Promise<SearchResult[]> {
   if (!normalized) {
     return records
       .sort((left, right) => right.lastVisitedAt - left.lastVisitedAt)
-      .slice(0, 10)
+      .slice(0, MAX_RESULTS)
       .map((record) => ({
         ...record,
         score: 0
@@ -80,19 +234,13 @@ export async function searchRecords(query: string): Promise<SearchResult[]> {
   }
 
   return records
-    .filter((record) => {
-      return (
-        record.normalizedTitle.includes(normalized) ||
-        record.normalizedHostname.includes(normalized) ||
-        record.normalizedUrl.includes(normalized)
-      );
-    })
+    .filter((record) => matchesRecord(record, tokens))
     .map((record) => ({
       ...record,
-      score: scoreRecord(record, normalized)
+      score: scoreRecord(record, normalized, tokens)
     }))
-    .sort((left, right) => right.score - left.score)
-    .slice(0, 10);
+    .sort(compareSearchResults)
+    .slice(0, MAX_RESULTS);
 }
 
 export async function touchSearchRecord(recordId: number) {

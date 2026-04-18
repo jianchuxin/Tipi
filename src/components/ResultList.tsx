@@ -1,3 +1,5 @@
+import { useMemo, useState } from "react";
+import { browser } from "wxt/browser";
 import { formatRelativeDate, formatResultUrl, getResultMonogram, getResultSummary } from "@/lib/utils/format";
 import type { SearchResult } from "@/types/tipi";
 
@@ -19,7 +21,7 @@ export function ResultList({
   if (isLoading) {
     return (
       <div className="journal-panel px-[24px] py-[40px] text-center text-[14px] text-[color:var(--color-muted)]">
-        Syncing search results...
+        Searching your history...
       </div>
     );
   }
@@ -27,7 +29,7 @@ export function ResultList({
   if (results.length === 0) {
     return (
       <div className="journal-panel px-[24px] py-[40px] text-center text-[14px] text-[color:var(--color-muted)]">
-        No indexed entry matched this search. Try a shorter keyword or sync history again.
+        No matching history entry.
       </div>
     );
   }
@@ -53,9 +55,7 @@ export function ResultList({
                 : "opacity-0 group-hover:opacity-100"
             } bg-[linear-gradient(180deg,var(--color-secondary),var(--color-primary-soft))]`}
           />
-          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] bg-[color:var(--color-surface-high)] text-[13px] font-semibold tracking-[0.08em] text-[color:var(--color-primary)]">
-            {getResultMonogram(result.hostname)}
-          </div>
+          <FaviconBadge hostname={result.hostname} url={result.url} />
           <div className="min-w-0 flex-1">
             <div className="mb-[4px] flex items-start justify-between gap-[16px]">
               <h3 className="truncate font-[var(--font-display)] text-[17px] font-extrabold tracking-[-0.03em] text-[color:var(--color-ink)] sm:text-[18px]">
@@ -74,6 +74,49 @@ export function ResultList({
           </div>
         </button>
       ))}
+    </div>
+  );
+}
+
+function FaviconBadge({
+  url,
+  hostname
+}: {
+  url: string;
+  hostname: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const faviconUrl = useMemo(() => {
+    const manifestPermissions = browser.runtime.getManifest().permissions ?? [];
+
+    if (!manifestPermissions.includes("favicon")) {
+      return null;
+    }
+
+    const extensionBaseUrl = browser.runtime
+      .getURL("/popup.html")
+      .replace(/\/popup\.html$/, "/");
+    const resourceUrl = new URL("_favicon/", extensionBaseUrl);
+    resourceUrl.searchParams.set("pageUrl", url);
+    resourceUrl.searchParams.set("size", "32");
+    return resourceUrl.toString();
+  }, [url]);
+
+  return (
+    <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-[color:var(--color-surface-high)] text-[13px] font-semibold tracking-[0.08em] text-[color:var(--color-primary)]">
+      {faviconUrl && !hasError ? (
+        <img
+          alt=""
+          className="h-[22px] w-[22px] rounded-[6px] object-contain"
+          loading="lazy"
+          onError={() => {
+            setHasError(true);
+          }}
+          src={faviconUrl}
+        />
+      ) : (
+        getResultMonogram(hostname)
+      )}
     </div>
   );
 }

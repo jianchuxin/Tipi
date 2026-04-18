@@ -183,7 +183,7 @@ export default function PopupApp() {
       return "Matching entries from your local history index.";
     }
 
-    return "Start typing to search your history, bookmarks, and open tabs.";
+    return "Start typing to search your browsing history.";
   }, [errorMessage, query]);
 
   return (

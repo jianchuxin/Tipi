@@ -227,7 +227,7 @@ export default function OverlayApp() {
     }
 
     if (!query.trim()) {
-      return "Start typing to search your history, bookmarks, and open tabs.";
+      return "Start typing to search your browsing history.";
     }
 
     if (results.length === 0 && !isLoading) {
