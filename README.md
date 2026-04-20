@@ -148,6 +148,15 @@ npm run build:firefox
 
 Tipi 当前不上传历史数据到远程服务，索引默认仅保存在浏览器本地。
 
+## 发布准备
+
+如果准备上 Chrome Web Store，可以直接参考这些文档：
+
+- [隐私政策](./PRIVACY.md)
+- [Chrome Web Store 提交材料](./src/docs/release/chrome-web-store-submission.md)
+
+建议先走 `Unlisted` 发布，再转 `Public`。
+
 ## 项目结构
 
 ```text
