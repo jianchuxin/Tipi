@@ -228,7 +228,7 @@ export default function PopupApp() {
         footerLabel={
           query.trim()
             ? "Enter opens the highlighted entry."
-            : "Results appear after you start typing."
+            : "Tipi may open as a separate window on browser-restricted pages."
         }
         helperText={helperLabel}
         indexedCount={stats.totalRecords}
