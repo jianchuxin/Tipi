@@ -121,6 +121,78 @@ function SettingRow({
   );
 }
 
+function GettingStartedCard({
+  isSyncing,
+  onSync,
+  shortcutLabel
+}: {
+  isSyncing: boolean;
+  onSync: () => void;
+  shortcutLabel: string;
+}) {
+  const steps = [
+    {
+      label: "Sync History",
+      description: "Build your local browsing journal before searching."
+    },
+    {
+      label: `Press ${shortcutLabel}`,
+      description: "Open Tipi from regular webpages without reaching for the toolbar."
+    },
+    {
+      label: "Search and press Enter",
+      description: "Jump back to the highlighted result with the keyboard."
+    }
+  ];
+
+  return (
+    <section className="journal-panel relative mt-12 overflow-hidden px-8 py-7">
+      <div className="absolute inset-y-0 left-0 w-1 bg-[color:var(--color-primary)]/80" />
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-[0.14em] text-[color:var(--color-primary)]">
+            Getting Started
+          </p>
+          <h2 className="mt-2 font-[var(--font-display)] text-[1.8rem] font-extrabold tracking-[-0.05em] text-[color:var(--color-ink)]">
+            Three steps to make Tipi useful
+          </h2>
+          <p className="mt-3 max-w-2xl text-[1rem] leading-8 text-[color:var(--color-muted)]">
+            Tipi works from your local browser history. Sync once, then use the
+            shortcut to search and reopen pages.
+          </p>
+        </div>
+        <button
+          className="journal-button-primary inline-flex items-center justify-center gap-3 self-start px-6 py-3.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isSyncing}
+          onClick={onSync}
+          type="button"
+        >
+          <CloudSyncIcon className="h-5 w-5" />
+          {isSyncing ? "Syncing..." : "Sync History"}
+        </button>
+      </div>
+      <div className="mt-7 grid gap-3 md:grid-cols-3">
+        {steps.map((step, index) => (
+          <article
+            className="rounded-[18px] border border-[color:var(--color-line)] bg-[rgba(255,255,255,0.58)] p-5"
+            key={step.label}
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--color-surface-low)] text-sm font-bold text-[color:var(--color-primary)]">
+              {index + 1}
+            </span>
+            <h3 className="mt-4 font-[var(--font-display)] text-[1.05rem] font-bold tracking-[-0.03em] text-[color:var(--color-ink)]">
+              {step.label}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-[color:var(--color-muted)]">
+              {step.description}
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ToggleControl({
   enabled,
   onChange
@@ -340,6 +412,14 @@ export default function OptionsApp() {
             parameters.
           </p>
         </header>
+
+        <GettingStartedCard
+          isSyncing={isSyncing}
+          onSync={() => {
+            void handleSync();
+          }}
+          shortcutLabel={shortcutLabel}
+        />
 
         <section className="mt-16" id="data-overview">
           <div className="mb-6 flex items-center gap-4">
