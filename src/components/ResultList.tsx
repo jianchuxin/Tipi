@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { browser } from "wxt/browser";
-import { formatRelativeDate, formatResultUrl, getResultMonogram, getResultSummary } from "@/lib/utils/format";
+import { getEnvironmentLabel } from "@/lib/search/metadata";
+import { formatRelativeDate, formatResultUrl, getResultMonogram } from "@/lib/utils/format";
 import { tokenizeText } from "@/lib/utils/string";
 import type { SearchResult } from "@/types/tipi";
 
@@ -59,10 +60,10 @@ export function ResultList({
   }
 
   return (
-    <div className="space-y-[12px]">
+    <div className="space-y-[8px]">
       {results.map((result) => (
         <button
-          className={`group relative flex w-full items-start gap-[16px] overflow-hidden rounded-[20px] px-[20px] py-[18px] text-left transition duration-300 ${
+          className={`group relative flex w-full items-start gap-[12px] overflow-hidden rounded-[18px] px-[16px] py-[14px] text-left transition duration-300 ${
             selectedId === result.id
               ? "journal-card-active"
               : "journal-card hover:-translate-y-[1px] hover:bg-[color:var(--color-surface-high)]"
@@ -97,30 +98,46 @@ export function ResultList({
             url={result.url}
           />
           <div className="min-w-0 flex-1">
-            <div className="mb-[4px] flex items-start justify-between gap-[16px]">
-              <h3 className="truncate font-[var(--font-display)] text-[17px] font-extrabold tracking-[-0.03em] text-[color:var(--color-ink)] sm:text-[18px]">
+            <div className="mb-[2px] flex items-start justify-between gap-[12px]">
+              <h3 className="truncate font-[var(--font-display)] text-[16px] font-extrabold tracking-[-0.03em] text-[color:var(--color-ink)] sm:text-[17px]">
                 <HighlightedText
                   text={result.title || result.hostname}
                   tokens={highlightTokens}
                 />
               </h3>
-              <span className="shrink-0 whitespace-nowrap text-[12px] text-[color:var(--color-outline)]">
-                {formatRelativeDate(result.lastVisitedAt)}
-              </span>
+              <div className="flex shrink-0 items-center gap-[6px] pt-[1px]">
+                <EnvironmentBadge result={result} />
+                <span className="whitespace-nowrap text-[11px] text-[color:var(--color-outline)]">
+                  {formatRelativeDate(result.lastVisitedAt)}
+                </span>
+              </div>
             </div>
-            <p className="truncate text-[15px] text-[color:var(--color-secondary)]">
+            <p className="truncate text-[14px] text-[color:var(--color-secondary)]">
               <HighlightedText
                 text={formatResultUrl(result.url)}
                 tokens={highlightTokens}
               />
             </p>
-            <p className="mt-[8px] line-clamp-2 text-[14px] leading-[24px] text-[color:var(--color-muted)]">
-              {getResultSummary(result.url, result.title)}
-            </p>
           </div>
         </button>
       ))}
     </div>
+  );
+}
+
+function EnvironmentBadge({ result }: { result: SearchResult }) {
+  const label = result.metadata
+    ? getEnvironmentLabel(result.metadata.environment)
+    : null;
+
+  if (!label) {
+    return null;
+  }
+
+  return (
+    <span className="rounded-[6px] border border-[color:var(--color-line)] bg-[rgba(255,255,255,0.54)] px-[5px] py-[1px] text-[9px] font-bold leading-[14px] tracking-[0.08em] text-[color:var(--color-primary)]">
+      {label}
+    </span>
   );
 }
 
@@ -154,11 +171,11 @@ function FaviconBadge({
   }, [showFavicon, url]);
 
   return (
-    <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-[color:var(--color-surface-high)] text-[13px] font-semibold tracking-[0.08em] text-[color:var(--color-primary)]">
+    <div className="flex h-[36px] w-[36px] shrink-0 items-center justify-center overflow-hidden rounded-[12px] bg-[color:var(--color-surface-high)] text-[12px] font-semibold tracking-[0.08em] text-[color:var(--color-primary)]">
       {faviconUrl && !hasError ? (
         <img
           alt=""
-          className="h-[22px] w-[22px] rounded-[6px] object-contain"
+          className="h-[18px] w-[18px] rounded-[5px] object-contain"
           loading="lazy"
           onError={() => {
             setHasError(true);

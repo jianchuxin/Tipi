@@ -12,7 +12,27 @@ export type HistoryRecord = {
   lastOpenedByTipiAt: number | null;
 };
 
+export type SearchEnvironment =
+  | "test"
+  | "live"
+  | "prod"
+  | "staging"
+  | "dev"
+  | "uat"
+  | "qa"
+  | "preview"
+  | "sandbox"
+  | "unknown";
+
+export type SearchMetadata = {
+  environment: SearchEnvironment;
+  serviceKey: string | null;
+  domainKey: string | null;
+  hostFamily: string;
+};
+
 export type SearchResult = HistoryRecord & {
+  metadata?: SearchMetadata;
   score: number;
 };
 

@@ -1,5 +1,14 @@
+import {
+  getMetadataForRecords,
+  getQueryEnvironmentIntent
+} from "./metadata.ts";
 import { normalizeText, tokenizeText } from "../utils/string.ts";
-import type { HistoryRecord, SearchResult } from "../../types/tipi.ts";
+import type {
+  HistoryRecord,
+  SearchEnvironment,
+  SearchMetadata,
+  SearchResult
+} from "../../types/tipi.ts";
 
 export const DEFAULT_MAX_RESULTS = 12;
 
@@ -58,6 +67,43 @@ function scoreOpenedByTipi(timestamp: number | null) {
 
 export function tokenizeQuery(query: string) {
   return tokenizeText(query);
+}
+
+function areCompatibleEnvironments(
+  left: SearchEnvironment,
+  right: SearchEnvironment
+) {
+  if (left === right) {
+    return true;
+  }
+
+  return (
+    (left === "live" && right === "prod") ||
+    (left === "prod" && right === "live")
+  );
+}
+
+function scoreEnvironmentIntent(
+  metadata: SearchMetadata | undefined,
+  environmentIntent: SearchEnvironment | null
+) {
+  if (!metadata || !environmentIntent) {
+    return 0;
+  }
+
+  if (metadata.environment === environmentIntent) {
+    return 160;
+  }
+
+  if (areCompatibleEnvironments(metadata.environment, environmentIntent)) {
+    return 50;
+  }
+
+  if (metadata.environment === "unknown") {
+    return -20;
+  }
+
+  return -120;
 }
 
 export function scoreRecord(record: HistoryRecord, query: string, tokens: string[]) {
@@ -148,7 +194,21 @@ export function scoreRecord(record: HistoryRecord, query: string, tokens: string
   return Math.round(score);
 }
 
-export function matchesRecord(record: HistoryRecord, tokens: string[]) {
+function tokenMatchesMetadata(token: string, metadata: SearchMetadata | undefined) {
+  const environmentIntent = getQueryEnvironmentIntent(token);
+
+  if (!environmentIntent || !metadata) {
+    return false;
+  }
+
+  return areCompatibleEnvironments(metadata.environment, environmentIntent);
+}
+
+export function matchesRecord(
+  record: HistoryRecord,
+  tokens: string[],
+  metadata?: SearchMetadata
+) {
   if (tokens.length === 0) {
     return false;
   }
@@ -157,7 +217,8 @@ export function matchesRecord(record: HistoryRecord, tokens: string[]) {
     return (
       record.normalizedTitle.includes(token) ||
       record.normalizedHostname.includes(token) ||
-      record.normalizedUrl.includes(token)
+      record.normalizedUrl.includes(token) ||
+      tokenMatchesMetadata(token, metadata)
     );
   });
 }
@@ -182,6 +243,80 @@ export function compareSearchResults(left: SearchResult, right: SearchResult) {
   return right.typedCount - left.typedCount;
 }
 
+function getExactHostnameKey(result: SearchResult) {
+  return normalizeText(result.hostname);
+}
+
+function getHostnameFamilyKey(result: SearchResult) {
+  return result.metadata?.hostFamily ?? normalizeText(result.hostname);
+}
+
+function getDiversifiedScore(
+  result: SearchResult,
+  exactHostCounts: Map<string, number>,
+  hostFamilyCounts: Map<string, number>
+) {
+  const exactHostnameKey = getExactHostnameKey(result);
+  const hostFamilyKey = getHostnameFamilyKey(result);
+  const exactHostSeen = exactHostCounts.get(exactHostnameKey) ?? 0;
+  const familySeen = hostFamilyCounts.get(hostFamilyKey) ?? 0;
+
+  return (
+    result.score -
+    exactHostSeen * 96 -
+    Math.max(0, familySeen - 1) * 18
+  );
+}
+
+function diversifySearchResults(results: SearchResult[], maxResults: number) {
+  const remaining = [...results];
+  const selected: SearchResult[] = [];
+  const exactHostCounts = new Map<string, number>();
+  const hostFamilyCounts = new Map<string, number>();
+
+  while (remaining.length > 0 && selected.length < maxResults) {
+    let bestIndex = 0;
+    let bestCandidateScore = Number.NEGATIVE_INFINITY;
+
+    for (let index = 0; index < remaining.length; index += 1) {
+      const candidate = remaining[index];
+      const diversifiedScore = getDiversifiedScore(
+        candidate,
+        exactHostCounts,
+        hostFamilyCounts
+      );
+
+      if (diversifiedScore > bestCandidateScore) {
+        bestCandidateScore = diversifiedScore;
+        bestIndex = index;
+        continue;
+      }
+
+      if (
+        diversifiedScore === bestCandidateScore &&
+        compareSearchResults(candidate, remaining[bestIndex]) < 0
+      ) {
+        bestIndex = index;
+      }
+    }
+
+    const [winner] = remaining.splice(bestIndex, 1);
+
+    if (!winner) {
+      break;
+    }
+
+    const exactHostnameKey = getExactHostnameKey(winner);
+    const hostFamilyKey = getHostnameFamilyKey(winner);
+
+    exactHostCounts.set(exactHostnameKey, (exactHostCounts.get(exactHostnameKey) ?? 0) + 1);
+    hostFamilyCounts.set(hostFamilyKey, (hostFamilyCounts.get(hostFamilyKey) ?? 0) + 1);
+    selected.push(winner);
+  }
+
+  return selected;
+}
+
 export function searchHistoryRecords(
   records: HistoryRecord[],
   query: string,
@@ -189,6 +324,8 @@ export function searchHistoryRecords(
 ): SearchResult[] {
   const normalized = normalizeText(query);
   const tokens = tokenizeQuery(query);
+  const metadataById = getMetadataForRecords(records);
+  const environmentIntent = getQueryEnvironmentIntent(query);
 
   if (!normalized) {
     return [...records]
@@ -196,16 +333,21 @@ export function searchHistoryRecords(
       .slice(0, maxResults)
       .map((record) => ({
         ...record,
+        metadata: metadataById.get(record.id),
         score: 0
       }));
   }
 
-  return records
-    .filter((record) => matchesRecord(record, tokens))
+  const rankedResults = records
+    .filter((record) => matchesRecord(record, tokens, metadataById.get(record.id)))
     .map((record) => ({
       ...record,
-      score: scoreRecord(record, normalized, tokens)
+      metadata: metadataById.get(record.id),
+      score:
+        scoreRecord(record, normalized, tokens) +
+        scoreEnvironmentIntent(metadataById.get(record.id), environmentIntent)
     }))
-    .sort(compareSearchResults)
-    .slice(0, maxResults);
+    .sort(compareSearchResults);
+
+  return diversifySearchResults(rankedResults, maxResults);
 }

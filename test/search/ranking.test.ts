@@ -138,3 +138,98 @@ test("hostname normalization allows domain-style queries to match www URLs", () 
   assert.equal(results.length, 1);
   assert.equal(results[0]?.hostname, "openai.com");
 });
+
+test("diversifies repeated environment hosts so a sibling live host can still surface", (t) => {
+  const now = 1_710_000_000_000;
+  t.mock.method(Date, "now", () => now);
+
+  const results = searchHistoryRecords(
+    [
+      createRecord({
+        url: "https://stellios-abtest.fp-data.test.shopee.io/dashboard",
+        title: "ABTest Dashboard",
+        lastVisitedAt: now - 3600000,
+        visitCount: 24,
+        typedCount: 5
+      }),
+      createRecord({
+        url: "https://stellios-abtest.fp-data.test.shopee.io/metrics",
+        title: "ABTest Metrics",
+        lastVisitedAt: now - 5400000,
+        visitCount: 18,
+        typedCount: 4
+      }),
+      createRecord({
+        url: "https://stellios-abtest.fp-data.shopee.io/dashboard",
+        title: "ABTest Dashboard",
+        lastVisitedAt: now - 7200000,
+        visitCount: 3,
+        typedCount: 0
+      })
+    ],
+    "abtest",
+    3
+  );
+
+  assert.equal(results[0]?.hostname, "stellios-abtest.fp-data.test.shopee.io");
+  assert.equal(results[1]?.hostname, "stellios-abtest.fp-data.shopee.io");
+  assert.equal(results[1]?.metadata?.environment, "live");
+});
+
+test("environment intent ranks inferred live host ahead of frequent test host", (t) => {
+  const now = 1_710_000_000_000;
+  t.mock.method(Date, "now", () => now);
+
+  const results = searchHistoryRecords(
+    [
+      createRecord({
+        url: "https://stellios-abtest.fp-data.test.shopee.io/dashboard",
+        title: "ABTest Dashboard",
+        lastVisitedAt: now - 3600000,
+        visitCount: 24,
+        typedCount: 5
+      }),
+      createRecord({
+        url: "https://stellios-abtest.fp-data.shopee.io/dashboard",
+        title: "ABTest Dashboard",
+        lastVisitedAt: now - 7200000,
+        visitCount: 3,
+        typedCount: 0
+      })
+    ],
+    "abtest live",
+    2
+  );
+
+  assert.equal(results[0]?.hostname, "stellios-abtest.fp-data.shopee.io");
+  assert.equal(results[0]?.metadata?.environment, "live");
+});
+
+test("environment intent ranks test host ahead of inferred live host", (t) => {
+  const now = 1_710_000_000_000;
+  t.mock.method(Date, "now", () => now);
+
+  const results = searchHistoryRecords(
+    [
+      createRecord({
+        url: "https://stellios-abtest.fp-data.test.shopee.io/dashboard",
+        title: "ABTest Dashboard",
+        lastVisitedAt: now - 7200000,
+        visitCount: 3,
+        typedCount: 0
+      }),
+      createRecord({
+        url: "https://stellios-abtest.fp-data.shopee.io/dashboard",
+        title: "ABTest Dashboard",
+        lastVisitedAt: now - 3600000,
+        visitCount: 24,
+        typedCount: 5
+      })
+    ],
+    "abtest test",
+    2
+  );
+
+  assert.equal(results[0]?.hostname, "stellios-abtest.fp-data.test.shopee.io");
+  assert.equal(results[0]?.metadata?.environment, "test");
+});
