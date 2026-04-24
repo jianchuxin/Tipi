@@ -2,6 +2,7 @@ import type { ChangeEvent, KeyboardEvent, RefObject } from "react";
 import { ResultList } from "@/components/ResultList";
 import { BrandMark } from "@/components/BrandMark";
 import { FocusIcon, MicIcon, SearchIcon, SparkIcon } from "@/components/icons";
+import { getSearchEmptyState } from "@/lib/onboarding/search-empty-state";
 import { formatCompactNumber } from "@/lib/utils/format";
 import type { SearchResult } from "@/types/tipi";
 
@@ -45,6 +46,10 @@ export function SearchCommandCenter({
   inputRef
 }: SearchCommandCenterProps) {
   const shouldShowResultList = showResults && (isLoading || results.length > 0);
+  const emptyState = getSearchEmptyState({
+    indexedCount,
+    shortcutLabel: shortcutLabel || "Alt + K"
+  });
 
   return (
     <div
@@ -135,8 +140,23 @@ export function SearchCommandCenter({
               showFavicons={showFavicons}
             />
           ) : (
-            <div className="flex h-full min-h-[180px] items-center justify-center px-[18px] py-[24px] text-center text-[13px] text-[color:var(--color-muted)]">
-              Start typing to search.
+            <div className="flex h-full min-h-[180px] flex-col justify-center rounded-[18px] border border-dashed border-[color:var(--color-line)] bg-[rgba(255,255,255,0.34)] px-[18px] py-[22px] text-left">
+              <p className="font-[var(--font-display)] text-[16px] font-bold tracking-[-0.03em] text-[color:var(--color-ink)]">
+                {emptyState.title}
+              </p>
+              <div className="mt-[12px] space-y-[8px]">
+                {emptyState.steps.map((step, index) => (
+                  <div
+                    className="flex items-start gap-[10px] text-[13px] leading-[20px] text-[color:var(--color-muted)]"
+                    key={step}
+                  >
+                    <span className="mt-[1px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[color:var(--color-surface-low)] text-[10px] font-bold text-[color:var(--color-primary)]">
+                      {index + 1}
+                    </span>
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
