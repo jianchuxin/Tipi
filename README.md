@@ -164,6 +164,21 @@ Tipi 当前不上传历史数据到远程服务，索引默认仅保存在浏览
 
 建议先走 `Unlisted` 发布，再转 `Public`。
 
+## GitHub Release
+
+项目已配置 GitHub Actions 自动发布流程。发布新版本时：
+
+1. 更新 `package.json` 和 `package-lock.json` 里的版本号
+2. 提交并推送到 `main`
+3. 创建并推送同名 tag，例如：
+
+```bash
+git tag 0.1.1
+git push origin 0.1.1
+```
+
+GitHub Actions 会自动运行测试、类型检查、Chrome / Firefox 打包，并创建 Release，附件包含 `.output/*.zip`。
+
 ## 项目结构
 
 ```text
