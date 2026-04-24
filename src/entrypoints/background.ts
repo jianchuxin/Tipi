@@ -20,6 +20,10 @@ import {
   upsertSearchRecords,
   touchSearchRecord
 } from "@/lib/search/search-index";
+import {
+  formatShortcutLabel,
+  readOpenSearchShortcutLabelFromCommands
+} from "@/lib/shortcuts/open-search-shortcut";
 import type { TipiMessage, TipiSettings, TipiSyncResponse } from "@/types/tipi";
 
 const HISTORY_WINDOW_DAYS = 90;
@@ -147,6 +151,19 @@ async function syncHistoryIndex(): Promise<TipiSyncResponse> {
   return {
     synced: records.length,
     at: Date.now()
+  };
+}
+
+async function getOpenSearchShortcutResponse() {
+  const shortcut = await readOpenSearchShortcutLabelFromCommands();
+
+  if (shortcut) {
+    return { shortcut };
+  }
+
+  const platform = await browser.runtime.getPlatformInfo();
+  return {
+    shortcut: formatShortcutLabel(platform.os === "mac" ? "Option+K" : "Alt+K")
   };
 }
 
@@ -314,6 +331,9 @@ export default defineBackground({
                 return;
               case "tipi.get-stats":
                 sendResponse(await getHistoryStats());
+                return;
+              case "tipi.get-open-search-shortcut":
+                sendResponse(await getOpenSearchShortcutResponse());
                 return;
               case "tipi.clear-data":
                 await clearHistoryRecords();

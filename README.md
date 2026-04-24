@@ -99,8 +99,8 @@ npm run build:firefox
 - 使用快捷键
 
 当前默认快捷键：
-- Windows / Linux: `Ctrl + Shift + K`
-- macOS: `Command + Shift + K`
+- Windows / Linux: `Alt + K`
+- macOS: `Option + K`
 
 如果快捷键冲突，可以在浏览器扩展快捷键设置页中修改。
 
@@ -213,6 +213,7 @@ npm run zip:firefox
 去浏览器扩展快捷键管理页检查：
 - 快捷键是否已注册
 - 是否和其他扩展冲突
+- macOS 如果使用非 Apple 键盘，`Option` 通常对应键盘上的 `Alt`
 
 ## 后续建议
 

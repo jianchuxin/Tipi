@@ -70,6 +70,9 @@ export type TipiMessage =
       type: "tipi.get-stats";
     }
   | {
+      type: "tipi.get-open-search-shortcut";
+    }
+  | {
       type: "tipi.clear-data";
     }
   | {

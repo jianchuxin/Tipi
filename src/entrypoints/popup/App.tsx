@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { browser, type Browser } from "wxt/browser";
 import { SearchCommandCenter } from "@/components/SearchCommandCenter";
 import { DEFAULT_TIPI_SETTINGS, getTipiSettings, TIPI_SETTINGS_STORAGE_KEY } from "@/lib/settings/tipi-settings";
+import { getOpenSearchShortcutLabel } from "@/lib/shortcuts/open-search-shortcut";
 import type { SearchResult, TipiSettings, TipiStatsResponse } from "@/types/tipi";
 
 const initialStats: TipiStatsResponse = {
@@ -48,6 +49,7 @@ export default function PopupApp() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [shortcutLabel, setShortcutLabel] = useState("Alt + K");
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
@@ -63,6 +65,7 @@ export default function PopupApp() {
     void getTipiSettings().then(setSettings).catch(() => {
       setSettings(DEFAULT_TIPI_SETTINGS);
     });
+    void getOpenSearchShortcutLabel().then(setShortcutLabel);
 
     const listener = (
       changes: Record<string, Browser.storage.StorageChange>,
@@ -245,6 +248,7 @@ export default function PopupApp() {
         }}
         query={query}
         results={results}
+        shortcutLabel={shortcutLabel}
         showResults={query.trim().length > 0}
         showFavicons={settings.showFavicons}
         selectedId={results[selectedIndex]?.id ?? null}

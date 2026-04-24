@@ -15,6 +15,7 @@ type SearchCommandCenterProps = {
   showResults?: boolean;
   selectedId?: number | null;
   footerLabel?: string;
+  shortcutLabel?: string;
   showFavicons?: boolean;
   onQueryChange: (value: string) => void;
   onQueryKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
@@ -34,6 +35,7 @@ export function SearchCommandCenter({
   showResults = true,
   selectedId,
   footerLabel,
+  shortcutLabel,
   showFavicons = true,
   onQueryChange,
   onQueryKeyDown,
@@ -53,15 +55,22 @@ export function SearchCommandCenter({
     >
       <div className="mb-[16px] flex items-center justify-between gap-[12px]">
         <BrandMark size="sm" />
-        {onClose ? (
-          <button
-            className="journal-chip text-[13px]"
-            onClick={onClose}
-            type="button"
-          >
-            Esc to close
-          </button>
-        ) : null}
+        <div className="flex items-center gap-[8px]">
+          {shortcutLabel ? (
+            <span className="journal-chip text-[12px]">
+              Shortcut {shortcutLabel}
+            </span>
+          ) : null}
+          {onClose ? (
+            <button
+              className="journal-chip text-[13px]"
+              onClick={onClose}
+              type="button"
+            >
+              Esc to close
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="journal-panel p-[14px] sm:p-[16px]">

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { browser, type Browser } from "wxt/browser";
 import { SearchCommandCenter } from "@/components/SearchCommandCenter";
 import { DEFAULT_TIPI_SETTINGS, getTipiSettings, TIPI_SETTINGS_STORAGE_KEY } from "@/lib/settings/tipi-settings";
+import { getOpenSearchShortcutLabel } from "@/lib/shortcuts/open-search-shortcut";
 import type { SearchResult, TipiMessage, TipiSettings, TipiStatsResponse } from "@/types/tipi";
 
 function isSearchResultArray(value: unknown): value is SearchResult[] {
@@ -49,11 +50,13 @@ export default function OverlayApp() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [shortcutLabel, setShortcutLabel] = useState("Alt + K");
 
   useEffect(() => {
     void getTipiSettings().then(setSettings).catch(() => {
       setSettings(DEFAULT_TIPI_SETTINGS);
     });
+    void getOpenSearchShortcutLabel().then(setShortcutLabel);
 
     const listener = (
       changes: Record<string, Browser.storage.StorageChange>,
@@ -330,6 +333,7 @@ export default function OverlayApp() {
             }}
             query={query}
             results={results}
+            shortcutLabel={shortcutLabel}
             showResults={query.trim().length > 0}
             showFavicons={settings.showFavicons}
             selectedId={results[selectedIndex]?.id ?? null}

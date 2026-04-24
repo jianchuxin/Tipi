@@ -3,7 +3,7 @@ import { defineConfig } from "wxt";
 export default defineConfig({
   srcDir: "src",
   modules: ["@wxt-dev/module-react"],
-  manifest: ({ browser, manifestVersion }) => ({
+  manifest: ({ browser }) => ({
     ...((browser !== "firefox"
       ? {
           web_accessible_resources: [
@@ -37,13 +37,10 @@ export default defineConfig({
     },
     commands: {
       "tipi.open-search": {
-        suggested_key:
-          manifestVersion === 3
-            ? {
-                default: "Ctrl+Shift+K",
-                mac: "Command+Shift+K"
-              }
-            : undefined,
+        suggested_key: {
+          default: "Alt+K",
+          mac: "Option+K"
+        },
         description: "Open Tipi search"
       }
     },

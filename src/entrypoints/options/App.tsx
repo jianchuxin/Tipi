@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 import { BrandMark } from "@/components/BrandMark";
 import { DEFAULT_TIPI_SETTINGS, getTipiSettings, updateTipiSettings } from "@/lib/settings/tipi-settings";
+import { getOpenSearchShortcutLabel } from "@/lib/shortcuts/open-search-shortcut";
 import {
   CheckCircleIcon,
   ChevronDownIcon,
@@ -183,6 +184,7 @@ export default function OptionsApp() {
   const [settings, setSettings] = useState<TipiSettings>(DEFAULT_TIPI_SETTINGS);
   const [isSyncing, setIsSyncing] = useState(false);
   const [message, setMessage] = useState("Tipi is ready.");
+  const [shortcutLabel, setShortcutLabel] = useState("Alt + K");
 
   async function loadStats() {
     try {
@@ -215,6 +217,7 @@ export default function OptionsApp() {
   useEffect(() => {
     void loadStats();
     void getTipiSettings().then(setSettings);
+    void getOpenSearchShortcutLabel().then(setShortcutLabel);
   }, []);
 
   async function handleSettingsChange(
@@ -431,6 +434,15 @@ export default function OptionsApp() {
           </div>
 
           <div className="space-y-3">
+            <SettingRow
+              control={
+                <span className="journal-chip-active whitespace-nowrap px-4 py-2.5 text-sm font-bold">
+                  {shortcutLabel}
+                </span>
+              }
+              description="Open Tipi from any regular webpage. You can change this in your browser extension keyboard shortcut settings."
+              title="Open search shortcut"
+            />
             <SettingRow
               control={
                 <ToggleControl
