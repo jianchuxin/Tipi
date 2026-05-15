@@ -19,7 +19,7 @@ const { title = "Tipi" } = Astro.props;
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="icon" type="image/png" href={`${import.meta.env.BASE_URL}logo.png`} />
   </head>
   <body>
     <slot />
