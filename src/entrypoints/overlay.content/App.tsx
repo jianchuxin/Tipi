@@ -274,7 +274,7 @@ export default function OverlayApp() {
   if (!visible) {
     return (
       <dialog
-        className="m-0 h-screen max-h-none w-screen max-w-none border-none bg-transparent p-0 backdrop:bg-slate-950/24 backdrop:backdrop-blur-[4px]"
+        className="pointer-events-auto m-0 h-screen max-h-none w-screen max-w-none border-none bg-transparent p-0 backdrop:bg-slate-950/24 backdrop:backdrop-blur-[4px]"
         ref={dialogRef}
       />
     );
@@ -282,7 +282,7 @@ export default function OverlayApp() {
 
   return (
     <dialog
-      className="m-0 h-screen max-h-none w-screen max-w-none border-none bg-transparent p-0 backdrop:bg-[rgba(27,28,25,0.18)] backdrop:backdrop-blur-[6px]"
+      className="pointer-events-auto m-0 h-screen max-h-none w-screen max-w-none border-none bg-transparent p-0 backdrop:bg-[rgba(27,28,25,0.18)] backdrop:backdrop-blur-[6px]"
       onCancel={(event) => {
         event.preventDefault();
         closeOverlay();
