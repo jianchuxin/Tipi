@@ -1,7 +1,9 @@
+import { browser } from "wxt/browser";
+
 export function ApiKeyGuide() {
   function handleOpenOptions() {
-    const optionsUrl = chrome.runtime.getURL("options.html");
-    chrome.tabs.create({ url: optionsUrl });
+    const optionsUrl = browser.runtime.getURL("options.html");
+    browser.tabs.create({ url: optionsUrl });
   }
 
   return (

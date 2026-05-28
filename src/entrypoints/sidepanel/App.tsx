@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { browser } from "wxt/browser";
+import { browser, type Browser } from "wxt/browser";
 import { ChatHeader } from "./components/ChatHeader";
 import { MessageList } from "./components/MessageList";
 import { ChatInput } from "./components/ChatInput";
@@ -21,7 +21,7 @@ export default function SidePanelApp() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [needsApiKey, setNeedsApiKey] = useState(false);
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(true);
-  const portRef = useRef<browser.runtime.Port | null>(null);
+  const portRef = useRef<Browser.runtime.Port | null>(null);
   const streamingContentRef = useRef("");
 
   useEffect(() => {
@@ -41,6 +41,22 @@ export default function SidePanelApp() {
     }
 
     void checkApiKey();
+  }, []);
+
+  useEffect(() => {
+    const listener = (
+      changes: Record<string, { newValue?: unknown }>,
+      areaName: string
+    ) => {
+      if (areaName !== "local" || !changes["tipi.ai-settings"]) return;
+      const settings = changes["tipi.ai-settings"].newValue;
+      if (settings && typeof settings === "object" && (settings as Record<string, unknown>).deepseekApiKey) {
+        setNeedsApiKey(false);
+      }
+    };
+
+    browser.storage.onChanged.addListener(listener);
+    return () => browser.storage.onChanged.removeListener(listener);
   }, []);
 
   function connectPort() {
@@ -117,6 +133,7 @@ export default function SidePanelApp() {
 
     portRef.current.onDisconnect.addListener(() => {
       setIsStreaming(false);
+      portRef.current = null;
     });
   }
 
@@ -136,7 +153,8 @@ export default function SidePanelApp() {
     setIsStreaming(true);
     streamingContentRef.current = "";
 
-    portRef.current!.postMessage({
+    if (!portRef.current) return;
+    portRef.current.postMessage({
       type: "USER_MESSAGE",
       payload: { text },
     });

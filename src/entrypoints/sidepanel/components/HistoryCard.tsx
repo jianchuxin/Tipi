@@ -1,5 +1,6 @@
 import type { SearchResult } from "@/types/tipi";
 import { formatRelativeDate } from "@/lib/utils/format";
+import { browser } from "wxt/browser";
 
 type HistoryCardProps = {
   result: SearchResult;
@@ -7,7 +8,7 @@ type HistoryCardProps = {
 
 export function HistoryCard({ result }: HistoryCardProps) {
   function handleClick() {
-    chrome.tabs.create({ url: result.url, active: true });
+    browser.tabs.create({ url: result.url, active: true });
   }
 
   return (

@@ -1,6 +1,6 @@
 import { StateGraph, END } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
-import type { AIMessage } from "@langchain/core/messages";
+import { type AIMessage, ToolMessage } from "@langchain/core/messages";
 import { AgentStateAnnotation } from "./state";
 import { tipiHistorySearchTool } from "./tools/historySearch";
 import type { AgentStreamEvent } from "./types";
@@ -36,7 +36,8 @@ export function createAgentGraph(
       payload: { toolName: toolCall.name, query: toolCall.args.query as string },
     });
 
-    const resultString = await tipiHistorySearchTool.invoke(toolCall);
+    const toolMessage = await tipiHistorySearchTool.invoke(toolCall);
+    const resultString = typeof toolMessage.content === "string" ? toolMessage.content : JSON.stringify(toolMessage.content);
     const results = JSON.parse(resultString);
 
     onStreamEvent({
@@ -48,7 +49,7 @@ export function createAgentGraph(
 
     return {
       messages: [
-        { role: "tool" as const, content: resultString, tool_call_id: toolCall.id ?? "" },
+        new ToolMessage({ content: resultString, tool_call_id: toolCall.id ?? "" }),
       ],
       foundResults: resultList,
       currentQuery: toolCall.args.query as string,

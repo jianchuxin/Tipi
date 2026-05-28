@@ -25,7 +25,7 @@ import {
   readOpenSearchShortcutLabelFromCommands
 } from "@/lib/shortcuts/open-search-shortcut";
 import type { TipiMessage, TipiSettings, TipiSyncResponse } from "@/types/tipi";
-import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { HumanMessage, AIMessage, ToolMessage } from "@langchain/core/messages";
 import { createAgentGraph } from "@/lib/agent/graph";
 import { getAiSettings } from "@/lib/settings/tipi-settings";
 import { getLatestSession, createSession, saveMessageToSession } from "@/lib/chat/chat-store";
@@ -214,6 +214,7 @@ function handleAgentStream(port: Browser.runtime.Port) {
 
       const historyMessages = session.messages.map((m) => {
         if (m.role === "user") return new HumanMessage(m.content);
+        if (m.role === "tool") return new ToolMessage({ content: m.content, tool_call_id: "" });
         return new AIMessage(m.content);
       });
 
