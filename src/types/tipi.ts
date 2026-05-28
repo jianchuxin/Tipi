@@ -80,4 +80,10 @@ export type TipiMessage =
       url: string;
       recordId: number;
       openInNewTab?: boolean;
+    }
+  | {
+      type: "tipi.open-side-panel";
+    }
+  | {
+      type: "tipi.get-ai-settings";
     };
