@@ -172,9 +172,16 @@ async function getOpenSearchShortcutResponse() {
   };
 }
 
-async function handleOpenSidePanel() {
+async function handleOpenSidePanel(senderWindowId?: number) {
   try {
-    await (browser as unknown as { sidePanel: { open: () => Promise<void> } }).sidePanel.open();
+    let windowId = senderWindowId;
+    if (typeof windowId !== "number") {
+      const currentWindow = await browser.windows.getCurrent();
+      windowId = currentWindow.id;
+    }
+    if (typeof windowId === "number") {
+      await (browser as unknown as { sidePanel: { open: (opts: { windowId: number }) => Promise<void> } }).sidePanel.open({ windowId });
+    }
   } catch (error) {
     console.warn("[Tipi] sidePanel.open failed, falling back to popup", error);
     await openPopupWindow();
@@ -479,7 +486,7 @@ export default defineBackground({
                 sendResponse({ ok: true });
                 return;
               case "tipi.open-side-panel":
-                await handleOpenSidePanel();
+                await handleOpenSidePanel(sender.tab?.windowId);
                 sendResponse({ ok: true });
                 return;
               case "tipi.get-ai-settings":
