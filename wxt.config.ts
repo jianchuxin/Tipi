@@ -24,7 +24,7 @@ export default defineConfig({
     },
     permissions:
       browser !== "firefox"
-        ? ["history", "storage", "tabs", "windows", "favicon"]
+        ? ["history", "storage", "tabs", "windows", "favicon", "sidePanel"]
         : ["history", "storage", "tabs", "windows"],
     action: {
       default_title: "Open Tipi",
@@ -35,6 +35,9 @@ export default defineConfig({
         128: "/icon.png"
       }
     },
+    side_panel: browser !== "firefox"
+      ? { default_path: "sidepanel.html" }
+      : undefined,
     commands: {
       "tipi.open-search": {
         suggested_key: {
@@ -42,6 +45,13 @@ export default defineConfig({
           mac: "Option+K"
         },
         description: "Open Tipi search"
+      },
+      "tipi.open-ai": {
+        suggested_key: {
+          default: "Alt+I",
+          mac: "Option+I"
+        },
+        description: "Open Tipi AI assistant"
       }
     },
     browser_specific_settings:

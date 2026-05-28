@@ -436,11 +436,14 @@ export default defineBackground({
     });
 
     browser.commands.onCommand.addListener((command) => {
-      if (command !== "tipi.open-search") {
+      if (command === "tipi.open-search") {
+        void toggleOverlayInActiveTab();
         return;
       }
 
-      void toggleOverlayInActiveTab();
+      if (command === "tipi.open-ai") {
+        void handleOpenSidePanel();
+      }
     });
 
     browser.runtime.onMessage.addListener(
