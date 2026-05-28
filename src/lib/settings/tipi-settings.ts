@@ -1,5 +1,7 @@
 import { browser } from "wxt/browser";
 import type { TipiSettings } from "@/types/tipi";
+import type { AiSettings } from "@/lib/agent/types";
+import { AI_SETTINGS_STORAGE_KEY, DEFAULT_AI_SETTINGS } from "@/lib/agent/types";
 
 export const TIPI_SETTINGS_STORAGE_KEY = "tipi.settings";
 
@@ -68,6 +70,37 @@ export async function updateTipiSettings(patch: Partial<TipiSettings>) {
 
   await browser.storage.local.set({
     [TIPI_SETTINGS_STORAGE_KEY]: next
+  });
+
+  return next;
+}
+
+export async function getAiSettings(): Promise<AiSettings> {
+  const stored = await browser.storage.local.get(AI_SETTINGS_STORAGE_KEY);
+  const value = stored[AI_SETTINGS_STORAGE_KEY];
+
+  if (!value || typeof value !== "object") {
+    return DEFAULT_AI_SETTINGS;
+  }
+
+  return {
+    deepseekApiKey:
+      typeof (value as Record<string, unknown>).deepseekApiKey === "string"
+        ? (value as Record<string, unknown>).deepseekApiKey
+        : "",
+    deepseekBaseUrl:
+      typeof (value as Record<string, unknown>).deepseekBaseUrl === "string"
+        ? (value as Record<string, unknown>).deepseekBaseUrl
+        : DEFAULT_AI_SETTINGS.deepseekBaseUrl,
+  } as AiSettings;
+}
+
+export async function updateAiSettings(patch: Partial<AiSettings>): Promise<AiSettings> {
+  const current = await getAiSettings();
+  const next: AiSettings = { ...current, ...patch };
+
+  await browser.storage.local.set({
+    [AI_SETTINGS_STORAGE_KEY]: next,
   });
 
   return next;
