@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { browser } from "wxt/browser";
 import { BrandMark } from "@/components/BrandMark";
-import { DEFAULT_TIPI_SETTINGS, getTipiSettings, updateTipiSettings } from "@/lib/settings/tipi-settings";
+import { DEFAULT_TIPI_SETTINGS, getAiSettings, getTipiSettings, updateAiSettings, updateTipiSettings } from "@/lib/settings/tipi-settings";
 import { getOpenSearchShortcutLabel } from "@/lib/shortcuts/open-search-shortcut";
 import {
   CheckCircleIcon,
@@ -17,6 +17,8 @@ import {
   XCircleIcon
 } from "@/components/icons";
 import { formatCompactNumber, formatRelativeDate, formatStorageSize } from "@/lib/utils/format";
+import type { AiSettings } from "@/lib/agent/types";
+import { DEFAULT_AI_SETTINGS } from "@/lib/agent/types";
 import type { TipiSettings, TipiStatsResponse, TipiSyncResponse } from "@/types/tipi";
 
 const initialStats: TipiStatsResponse = {
@@ -257,6 +259,7 @@ export default function OptionsApp() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [message, setMessage] = useState("Tipi is ready.");
   const [shortcutLabel, setShortcutLabel] = useState("Alt + K");
+  const [aiSettings, setAiSettings] = useState<AiSettings>(DEFAULT_AI_SETTINGS);
 
   async function loadStats() {
     try {
@@ -290,6 +293,7 @@ export default function OptionsApp() {
     void loadStats();
     void getTipiSettings().then(setSettings);
     void getOpenSearchShortcutLabel().then(setShortcutLabel);
+    void getAiSettings().then(setAiSettings);
   }, []);
 
   async function handleSettingsChange(
@@ -346,6 +350,17 @@ export default function OptionsApp() {
     } catch (error) {
       console.error("[Tipi] clear failed", error);
       setMessage("Failed to clear local data.");
+    }
+  }
+
+  async function handleAiSettingsChange(patch: Partial<AiSettings>) {
+    try {
+      const next = await updateAiSettings(patch);
+      setAiSettings(next);
+      setMessage("AI 设置已保存。");
+    } catch (error) {
+      console.error("[Tipi] AI settings update failed", error);
+      setMessage("保存 AI 设置失败。");
     }
   }
 
@@ -625,6 +640,70 @@ export default function OptionsApp() {
               }
               description="Use results reopened from Tipi as a light ranking signal so repeated destinations surface faster."
               title="Use Tipi opens for ranking"
+            />
+          </div>
+        </section>
+
+        <section className="mt-16">
+          <div className="mb-6 flex items-center gap-4">
+            <h2 className="font-[var(--font-display)] text-[1.8rem] font-bold tracking-[-0.04em] text-[color:var(--color-ink)]">
+              AI 助理
+            </h2>
+            <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(198,200,184,0.5),transparent)]" />
+          </div>
+
+          <div className="space-y-3">
+            <SettingRow
+              control={
+                <input
+                  className="w-64 rounded-xl border px-4 py-2.5 text-sm outline-none transition focus:border-[color:var(--color-primary)]"
+                  onChange={(event) => {
+                    const deepseekApiKey = event.target.value;
+                    setAiSettings((prev) => ({ ...prev, deepseekApiKey }));
+                  }}
+                  onBlur={() => {
+                    void handleAiSettingsChange({
+                      deepseekApiKey: aiSettings.deepseekApiKey,
+                    });
+                  }}
+                  placeholder="sk-..."
+                  style={{
+                    borderColor: "var(--color-line)",
+                    backgroundColor: "rgba(255,255,255,0.76)",
+                    color: "var(--color-ink)",
+                  }}
+                  type="password"
+                  value={aiSettings.deepseekApiKey}
+                />
+              }
+              description="输入你的 DeepSeek API Key。Key 存储在浏览器本地，请求直连 DeepSeek 官方，不经过任何中转。"
+              title="DeepSeek API Key"
+            />
+            <SettingRow
+              control={
+                <input
+                  className="w-64 rounded-xl border px-4 py-2.5 text-sm outline-none transition focus:border-[color:var(--color-primary)]"
+                  onChange={(event) => {
+                    const deepseekBaseUrl = event.target.value;
+                    setAiSettings((prev) => ({ ...prev, deepseekBaseUrl }));
+                  }}
+                  onBlur={() => {
+                    void handleAiSettingsChange({
+                      deepseekBaseUrl: aiSettings.deepseekBaseUrl,
+                    });
+                  }}
+                  placeholder="https://api.deepseek.com/v1"
+                  style={{
+                    borderColor: "var(--color-line)",
+                    backgroundColor: "rgba(255,255,255,0.76)",
+                    color: "var(--color-ink)",
+                  }}
+                  type="text"
+                  value={aiSettings.deepseekBaseUrl}
+                />
+              }
+              description="DeepSeek API 端点地址。如果你使用兼容代理，可以在这里修改。"
+              title="API Base URL"
             />
           </div>
         </section>
