@@ -12,7 +12,7 @@ export function createAgentGraph(
 ) {
   const model = new ChatOpenAI({
     modelName: "deepseek-chat",
-    openAIApiKey: apiKey,
+    apiKey: apiKey,
     configuration: { baseURL: baseUrl },
     temperature: 0.1,
     streaming: true,
