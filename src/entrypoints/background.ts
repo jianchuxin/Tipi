@@ -25,6 +25,11 @@ import {
   readOpenSearchShortcutLabelFromCommands
 } from "@/lib/shortcuts/open-search-shortcut";
 import type { TipiMessage, TipiSettings, TipiSyncResponse } from "@/types/tipi";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { createAgentGraph } from "@/lib/agent/graph";
+import { getAiSettings } from "@/lib/settings/tipi-settings";
+import { getLatestSession, createSession, saveMessageToSession } from "@/lib/chat/chat-store";
+import type { AgentChatRequest, AgentStreamEvent, ChatMessage } from "@/lib/agent/types";
 
 const HISTORY_WINDOW_DAYS = 90;
 let popupWindowId: number | null = null;
@@ -167,6 +172,126 @@ async function getOpenSearchShortcutResponse() {
   };
 }
 
+async function handleOpenSidePanel() {
+  try {
+    await (browser as unknown as { sidePanel: { open: () => Promise<void> } }).sidePanel.open();
+  } catch (error) {
+    console.warn("[Tipi] sidePanel.open failed, falling back to popup", error);
+    await openPopupWindow();
+  }
+}
+
+function handleAgentStream(port: Browser.runtime.Port) {
+  let currentSessionId: string | null = null;
+
+  port.onMessage.addListener(async (msg: AgentChatRequest) => {
+    if (msg.type !== "USER_MESSAGE") return;
+
+    try {
+      const settings = await getAiSettings();
+
+      if (!settings.deepseekApiKey) {
+        port.postMessage({
+          type: "ERROR",
+          payload: { message: "未配置 DeepSeek API Key，请在 Tipi 设置页中填写。", code: 401 },
+        } satisfies AgentStreamEvent);
+        return;
+      }
+
+      let session = await getLatestSession();
+      if (!session) {
+        session = await createSession();
+      }
+      currentSessionId = session.id;
+
+      const userMsg: ChatMessage = {
+        id: `${Date.now()}-user`,
+        role: "user",
+        content: msg.payload.text,
+        timestamp: Date.now(),
+      };
+      await saveMessageToSession(session.id, userMsg);
+
+      const historyMessages = session.messages.map((m) => {
+        if (m.role === "user") return new HumanMessage(m.content);
+        return new AIMessage(m.content);
+      });
+
+      const app = createAgentGraph(
+        settings.deepseekApiKey,
+        settings.deepseekBaseUrl,
+        (event: AgentStreamEvent) => {
+          port.postMessage(event);
+        }
+      );
+
+      const initialState = {
+        messages: [...historyMessages, new HumanMessage(msg.payload.text)],
+        retryCount: 0,
+        foundResults: [] as import("@/types/tipi").SearchResult[],
+        currentQuery: "",
+      };
+
+      let finalContent = "";
+
+      const stream = await app.stream(initialState, { streamMode: "values" });
+
+      let lastState: typeof initialState | null = null;
+      for await (const chunk of stream) {
+        lastState = chunk as typeof initialState;
+      }
+
+      if (lastState) {
+        const msgs = lastState.messages;
+        const lastMsg = msgs[msgs.length - 1];
+        if (
+          lastMsg &&
+          typeof lastMsg === "object" &&
+          "_getType" in lastMsg &&
+          (lastMsg as { _getType: () => string })._getType() === "ai" &&
+          !("tool_calls" in lastMsg && (lastMsg as { tool_calls?: unknown[] }).tool_calls?.length)
+        ) {
+          const content = (lastMsg as { content: string }).content;
+          if (typeof content === "string") {
+            finalContent = content;
+
+            const words = content.split(/(\s+)/);
+            for (const word of words) {
+              port.postMessage({
+                type: "TOKEN",
+                payload: { text: word },
+              } satisfies AgentStreamEvent);
+            }
+          }
+        }
+      }
+
+      if (finalContent) {
+        const assistantMsg: ChatMessage = {
+          id: `${Date.now()}-assistant`,
+          role: "assistant",
+          content: finalContent,
+          timestamp: Date.now(),
+        };
+        await saveMessageToSession(session.id, assistantMsg);
+      }
+
+      port.postMessage({ type: "DONE", payload: {} } satisfies AgentStreamEvent);
+    } catch (error) {
+      port.postMessage({
+        type: "ERROR",
+        payload: {
+          message: error instanceof Error ? error.message : "Agent 运行异常",
+        },
+      } satisfies AgentStreamEvent);
+    }
+  });
+
+  port.onDisconnect.addListener(() => {
+    currentSessionId = null;
+  });
+}
+
 async function bootstrap() {
   try {
     currentSettings = await getTipiSettings();
@@ -279,6 +404,11 @@ export default defineBackground({
       }
     });
 
+    browser.runtime.onConnect.addListener((port) => {
+      if (port.name !== "tipi-agent-stream") return;
+      handleAgentStream(port);
+    });
+
     browser.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== "local" || !changes[TIPI_SETTINGS_STORAGE_KEY]) {
         return;
@@ -343,6 +473,13 @@ export default defineBackground({
               case "tipi.open-url":
                 await handleOpenUrl(message, sender);
                 sendResponse({ ok: true });
+                return;
+              case "tipi.open-side-panel":
+                await handleOpenSidePanel();
+                sendResponse({ ok: true });
+                return;
+              case "tipi.get-ai-settings":
+                sendResponse(await getAiSettings());
                 return;
               default:
                 sendResponse(null);
